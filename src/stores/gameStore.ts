@@ -1,15 +1,17 @@
 import { defineStore } from 'pinia';
-import type { GameState, Player, Tile } from '../types/mahjong';
-import { createFullWall, shuffleWall, dealTiles, sortHand, checkReady, checkWin, getWaitingTiles } from '../utils/tiles';
-import { calculateScore } from '../utils/scoring';
+import type { GameState, Player, Tile, MeldGroup, MeldOption, MeldAction } from '../types/mahjong';
+import { createFullWall, shuffleWall, dealTiles, sortHand } from '../utils/tiles';
+import { checkReady, checkWin, getWaitingTiles } from '../utils/mahjong';
+import { calculateScore } from '../utils/mahjong';
+import { canPon, canKan, canChi, canAnkan, getPonTiles, getKanTiles, canRon } from '../utils/mahjong/meld-checker';
 
 export const useGameStore = defineStore('game', {
   state: (): GameState => ({
     phase: 'initial',
     wall: [],
     players: [
-      { id: 0, name: '我', hand: [], discards: [], isDealer: false, hasDeclaredReady: false, score: 25000 },
-      { id: 1, name: 'AI', hand: [], discards: [], isDealer: false, hasDeclaredReady: false, score: 25000 }
+      { id: 0, name: '我', hand: [], discards: [], melds: [], isDealer: false, hasDeclaredReady: false, score: 25000, lastDrawnTileId: undefined },
+      { id: 1, name: 'AI', hand: [], discards: [], melds: [], isDealer: false, hasDeclaredReady: false, score: 25000, lastDrawnTileId: undefined }
     ],
     currentPlayerIndex: 0,
     dealerIndex: 0,
@@ -20,7 +22,10 @@ export const useGameStore = defineStore('game', {
     consecutiveDealerWins: 0,
     hasDrawnThisTurn: false,
     drawFourCount: 0,
-    aiSelectingTileId: null as string | null
+    aiSelectingTileId: null as string | null,
+    lastDiscardedTile: null,
+    lastDiscardPlayerIndex: null,
+    availableMeldOptions: []
   }),
 
   getters: {
@@ -31,12 +36,28 @@ export const useGameStore = defineStore('game', {
     opponentIndex: (state): number => state.currentPlayerIndex === 0 ? 1 : 0,
     opponent: (state): Player => state.players[state.currentPlayerIndex === 0 ? 1 : 0]!,
     
+    // 计算玩家应有的手牌数量（摸牌后）
+    // 基础13张 - 副露组数×3 + 1（刚摸的牌）
+    expectedHandCountAfterDraw: (state) => (playerIndex: number): number => {
+      const player = state.players[playerIndex]!;
+      return 13 - player.melds.length * 3 + 1;
+    },
+    
+    // 计算玩家应有的手牌数量（打牌前，即副露后）
+    // 基础13张 - 副露组数×3
+    expectedHandCountBeforeDraw: (state) => (playerIndex: number): number => {
+      const player = state.players[playerIndex]!;
+      return 13 - player.melds.length * 3;
+    },
+    
     // 检查当前玩家是否可以听牌（存在可打出的牌能让玩家进入听牌状态）
     canDeclareReady: (state): boolean => {
       if (state.readyPlayerIndex !== null) return false; // 已有人听牌
       
       const player = state.players[state.currentPlayerIndex]!;
-      if (player.hand.length !== 14) return false; // 必须是14张（刚摸牌后）
+      // 计算摸牌后应有的手牌数
+      const expectedCount = 13 - player.melds.length * 3 + 1;
+      if (player.hand.length !== expectedCount) return false;
       
       // 遍历手牌，检查打出某张牌后是否能形成听牌状态
       for (const tile of player.hand) {
@@ -121,8 +142,11 @@ export const useGameStore = defineStore('game', {
       
       if (dealt.length > 0) {
         const tile = dealt[0]!;
+        const player = this.players[playerIndex]!;
         // 摸到的牌直接放在最右边，不排序
-        this.players[playerIndex]!.hand.push(tile);
+        player.hand.push(tile);
+        // 标记最后摸的牌
+        player.lastDrawnTileId = tile.id;
         return tile;
       }
       
@@ -139,9 +163,201 @@ export const useGameStore = defineStore('game', {
         player.discards.push(discarded!);
         player.hand = sortHand(player.hand);
         
-        // 切换玩家并开始新回合
-        this.currentPlayerIndex = this.opponentIndex;
-        this.startNewTurn();
+        // 清除最后摸的牌标记
+        player.lastDrawnTileId = undefined;
+        
+        this.lastDiscardedTile = discarded!;
+        this.lastDiscardPlayerIndex = playerIndex;
+        
+        this.checkMeldOptions();
+        
+        if (this.availableMeldOptions.length === 0) {
+          this.currentPlayerIndex = this.opponentIndex;
+          this.startNewTurn();
+        } else {
+          this.phase = 'waiting_meld';
+          
+          // 如果所有副露选项都是AI玩家的，让AI自动处理
+          const hasPlayerOption = this.availableMeldOptions.some(opt => opt.playerIndex === 0);
+          if (!hasPlayerOption) {
+            // 只有AI有副露选项，让AI自动决策
+            setTimeout(() => {
+              this.aiHandleMeld();
+            }, 1000);
+          }
+        }
+      }
+    },
+    
+    checkMeldOptions() {
+      if (!this.lastDiscardedTile || this.lastDiscardPlayerIndex === null) {
+        this.availableMeldOptions = [];
+        return;
+      }
+      
+      const options: MeldOption[] = [];
+      const discardedTile = this.lastDiscardedTile;
+      const discardPlayerIndex = this.lastDiscardPlayerIndex;
+      
+      for (let i = 0; i < this.players.length; i++) {
+        if (i === discardPlayerIndex) continue;
+        
+        const player = this.players[i]!;
+        
+        if (canRon(player.hand, discardedTile, player.melds) && checkWin([...player.hand, discardedTile])) {
+          options.push({
+            action: 'ron',
+            tiles: [discardedTile],
+            playerIndex: i
+          });
+        }
+        
+        if (canKan(player.hand, discardedTile)) {
+          const tiles = getKanTiles(player.hand, discardedTile);
+          options.push({
+            action: 'kan',
+            tiles: [...tiles, discardedTile],
+            playerIndex: i
+          });
+        }
+        
+        if (canPon(player.hand, discardedTile)) {
+          const tiles = getPonTiles(player.hand, discardedTile);
+          options.push({
+            action: 'pon',
+            tiles: [...tiles, discardedTile],
+            playerIndex: i
+          });
+        }
+        
+        const nextPlayerIndex = (discardPlayerIndex + 1) % this.players.length;
+        if (i === nextPlayerIndex) {
+          const chiOptions = canChi(player.hand, discardedTile, i);
+          chiOptions.forEach(opt => {
+            options.push({
+              action: 'chi',
+              tiles: opt.tiles,
+              playerIndex: i
+            });
+          });
+        }
+      }
+      
+      this.availableMeldOptions = options;
+    },
+    
+    executeMeld(option: MeldOption) {
+      if (!this.lastDiscardedTile) return;
+      
+      const player = this.players[option.playerIndex]!;
+      const discardedTile = this.lastDiscardedTile;
+      
+      if (option.action === 'ron') {
+        this.handleRon(option.playerIndex, discardedTile);
+        return;
+      }
+      
+      const tilesToRemove = option.tiles.filter(t => t.id !== discardedTile.id);
+      tilesToRemove.forEach(tile => {
+        const index = player.hand.findIndex(t => t.id === tile.id);
+        if (index !== -1) {
+          player.hand.splice(index, 1);
+        }
+      });
+      
+      const meld: MeldGroup = {
+        type: option.action as 'pon' | 'kan' | 'chi',
+        tiles: option.tiles,
+        isOpen: true,
+        fromPlayer: this.lastDiscardPlayerIndex!,
+        calledTileId: discardedTile.id
+      };
+      
+      player.melds.push(meld);
+      
+      if (this.lastDiscardPlayerIndex !== null) {
+        const discardPlayer = this.players[this.lastDiscardPlayerIndex]!;
+        const discardIndex = discardPlayer.discards.findIndex(t => t.id === discardedTile.id);
+        if (discardIndex !== -1) {
+          discardPlayer.discards.splice(discardIndex, 1);
+        }
+      }
+      
+      if (option.action === 'kan') {
+        const tile = this.drawTile(option.playerIndex);
+        if (tile) {
+          player.hand.push(tile);
+        }
+      } else {
+        // 吃或碰后，清除最后摸的牌标记（因为没有摸新牌）
+        player.lastDrawnTileId = undefined;
+      }
+      
+      this.currentPlayerIndex = option.playerIndex;
+      this.phase = 'playing';
+      this.lastDiscardedTile = null;
+      this.lastDiscardPlayerIndex = null;
+      this.availableMeldOptions = [];
+      
+      // 副露后，当前玩家需要打牌
+      // 如果是AI，自动打牌
+      if (this.currentPlayerIndex === 1) {
+        setTimeout(() => {
+          this.opponentAutoPlay();
+        }, 1000);
+      }
+    },
+    
+    skipMeld() {
+      this.phase = 'playing';
+      this.lastDiscardedTile = null;
+      this.lastDiscardPlayerIndex = null;
+      this.availableMeldOptions = [];
+      
+      // 切换到下一个玩家并开始新回合
+      this.currentPlayerIndex = this.opponentIndex;
+      this.startNewTurn();
+    },
+    
+    handleRon(playerIndex: number, winTile: Tile) {
+      const winner = this.players[playerIndex]!;
+      const result = calculateScore(winner.hand, winTile, winner.isDealer, false, true);
+      
+      const loserIndex = this.lastDiscardPlayerIndex!;
+      const loser = this.players[loserIndex]!;
+      
+      winner.score += result.score;
+      loser.score -= result.score;
+      
+      this.phase = 'finished';
+    },
+    
+    declareAnkan(playerIndex: number, tileKey: string) {
+      const player = this.players[playerIndex]!;
+      const [type, value] = tileKey.split('-');
+      
+      const tiles = player.hand.filter(t => t.type === type && t.value === parseInt(value!));
+      
+      if (tiles.length === 4) {
+        tiles.forEach(tile => {
+          const index = player.hand.findIndex(t => t.id === tile.id);
+          if (index !== -1) {
+            player.hand.splice(index, 1);
+          }
+        });
+        
+        const meld: MeldGroup = {
+          type: 'ankan',
+          tiles: tiles,
+          isOpen: false
+        };
+        
+        player.melds.push(meld);
+        
+        const tile = this.drawTile(playerIndex);
+        if (tile) {
+          player.hand.push(tile);
+        }
       }
     },
     
@@ -366,8 +582,20 @@ export const useGameStore = defineStore('game', {
       let tileToDiscard: Tile | null = null;
       let shouldDeclareReady = false;
       
-      // 检查是否可以听牌
-      if (this.readyPlayerIndex === null && opponent.hand.length === 14) {
+      // 计算期望的手牌数量
+      const expectedAfterDraw = this.expectedHandCountAfterDraw(1);
+      const expectedBeforeDraw = this.expectedHandCountBeforeDraw(1);
+      
+      // 检查手牌数量是否正确（摸牌后或副露后）
+      const canDiscard = opponent.hand.length === expectedAfterDraw || opponent.hand.length === expectedBeforeDraw;
+      
+      if (!canDiscard) {
+        console.warn('AI手牌数量异常:', opponent.hand.length, '期望:', expectedAfterDraw, '或', expectedBeforeDraw);
+        return;
+      }
+      
+      // 检查是否可以听牌（只在摸牌后检查）
+      if (this.readyPlayerIndex === null && opponent.hand.length === expectedAfterDraw) {
         // 遍历手牌，找到打出后能听牌的牌
         for (const tile of opponent.hand) {
           const testHand = opponent.hand.filter(t => t.id !== tile.id);
@@ -383,8 +611,8 @@ export const useGameStore = defineStore('game', {
         if (!tileToDiscard) {
           tileToDiscard = opponent.hand[opponent.hand.length - 1]!;
         }
-      } else if (opponent.hand.length === 14) {
-        // 简单AI：打出最后摸到的牌
+      } else {
+        // 简单AI：打出最后一张牌
         tileToDiscard = opponent.hand[opponent.hand.length - 1]!;
       }
       
@@ -402,6 +630,46 @@ export const useGameStore = defineStore('game', {
           }
         }, 500); // 抬起效果持续500ms
       }
+    },
+    
+    // AI处理副露选项
+    aiHandleMeld() {
+      const aiOptions = this.availableMeldOptions.filter(opt => opt.playerIndex === 1);
+      
+      if (aiOptions.length === 0) {
+        this.skipMeld();
+        return;
+      }
+      
+      // 简单AI策略：优先荣和 > 杠 > 碰 > 吃 > 跳过
+      const ronOption = aiOptions.find(opt => opt.action === 'ron');
+      if (ronOption) {
+        this.executeMeld(ronOption);
+        return;
+      }
+      
+      const kanOption = aiOptions.find(opt => opt.action === 'kan');
+      if (kanOption) {
+        this.executeMeld(kanOption);
+        return;
+      }
+      
+      const ponOption = aiOptions.find(opt => opt.action === 'pon');
+      if (ponOption) {
+        this.executeMeld(ponOption);
+        return;
+      }
+      
+      // 吃牌的概率较低（30%）
+      const chiOptions = aiOptions.filter(opt => opt.action === 'chi');
+      if (chiOptions.length > 0 && Math.random() < 0.3) {
+        const randomChi = chiOptions[Math.floor(Math.random() * chiOptions.length)]!;
+        this.executeMeld(randomChi);
+        return;
+      }
+      
+      // 默认跳过
+      this.skipMeld();
     },
     
     // 对手自动猜牌

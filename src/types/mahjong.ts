@@ -9,21 +9,36 @@ export interface Tile {
   display: string;
 }
 
-// 玩家
+export interface MeldGroup {
+  type: 'pon' | 'kan' | 'chi' | 'ankan';
+  tiles: Tile[];
+  isOpen: boolean;
+  fromPlayer?: number;
+  calledTileId?: string; // 从对手那里获得的牌的ID
+}
+
 export interface Player {
   id: number;
   name: string;
   hand: Tile[];
   discards: Tile[];
+  melds: MeldGroup[];
   isDealer: boolean;
   hasDeclaredReady: boolean;
   score: number;
+  lastDrawnTileId?: string; // 最后摸的牌的ID，用于显示间隔
 }
 
-// 游戏阶段
-export type GamePhase = 'initial' | 'playing' | 'can_declare_ready' | 'ready_declared' | 'guessing' | 'draw_four' | 'finished';
+export type GamePhase = 'initial' | 'playing' | 'can_declare_ready' | 'ready_declared' | 'guessing' | 'draw_four' | 'finished' | 'waiting_meld';
 
-// 游戏状态
+export type MeldAction = 'pon' | 'kan' | 'chi' | 'ankan' | 'ron' | 'skip';
+
+export interface MeldOption {
+  action: MeldAction;
+  tiles: Tile[];
+  playerIndex: number;
+}
+
 export interface GameState {
   phase: GamePhase;
   wall: Tile[];
@@ -32,12 +47,15 @@ export interface GameState {
   dealerIndex: number;
   readyPlayerIndex: number | null;
   guessedTiles: Tile[];
-  drawnFourTiles: Tile[]; // 摸到的4张牌（用于显示）
+  drawnFourTiles: Tile[];
   roundNumber: number;
   consecutiveDealerWins: number;
-  hasDrawnThisTurn: boolean; // 当前回合是否已摸牌
-  drawFourCount: number; // 摸4张牌的次数
-  aiSelectingTileId: string | null; // AI正在选择的牌ID
+  hasDrawnThisTurn: boolean;
+  drawFourCount: number;
+  aiSelectingTileId: string | null;
+  lastDiscardedTile: Tile | null;
+  lastDiscardPlayerIndex: number | null;
+  availableMeldOptions: MeldOption[];
 }
 
 // 役种（简化版日麻）

@@ -1,32 +1,62 @@
 <template>
   <div class="opponent-discard-tile">
     <div class="opponent-discard-tile-face">
-      <span class="opponent-discard-tile-icon" :class="getTileColorClass(tile)">{{ getTileIcon(tile) }}</span>
+      <!-- 图片模式 -->
+      <img 
+        v-if="useImage && !imageError"
+        :src="tileImagePath" 
+        :alt="tile.display"
+        class="tile-image"
+        @error="handleImageError"
+      />
+      <!-- 文字降级模式 -->
+      <span 
+        v-else
+        class="opponent-discard-tile-icon" 
+        :class="getTileColorClass(tile)"
+      >
+        {{ getTileIcon(tile) }}
+      </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import type { Tile } from '../types/mahjong';
+import { getTileImagePath } from '../utils/tileImage';
 
 interface Props {
   tile: Tile;
+  useImage?: boolean;
 }
 
-defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  useImage: true
+});
 
-// 将麻将牌转换为显示文字
+const imageError = ref(false);
+
+// 获取图片路径
+const tileImagePath = computed(() => getTileImagePath(props.tile));
+
+// 图片加载失败时的处理
+const handleImageError = () => {
+  imageError.value = true;
+};
+
+// 将麻将牌转换为显示文字（降级方案）
 const getTileIcon = (tile: Tile): string => {
   return tile.display;
 };
 
-// 根据牌的类型返回颜色类名
+// 根据牌的类型返回颜色类名（降级方案）
 const getTileColorClass = (tile: Tile): string => {
   if (tile.type === 'man') return 'tile-man';
   if (tile.type === 'pin') return 'tile-pin';
   if (tile.type === 'sou') return 'tile-sou';
   if (tile.type === 'honor') {
-    if (tile.value === 5) return 'tile-honor-red';
+    if (tile.value === 7) return 'tile-honor-red';
     if (tile.value === 6) return 'tile-honor-green';
     return 'tile-honor';
   }
@@ -50,7 +80,7 @@ const getTileColorClass = (tile: Tile): string => {
 .opponent-discard-tile::after {
   content: '';
   position: absolute;
-  top: -9px;
+  top: 9px;
   left: 0;
   width: 100%;
   height: 100%;
@@ -63,7 +93,7 @@ const getTileColorClass = (tile: Tile): string => {
 .opponent-discard-tile::before {
   content: '';
   position: absolute;
-  top: -6px;
+  top: 6px;
   left: 0;
   width: 100%;
   height: 100%;
@@ -86,7 +116,18 @@ const getTileColorClass = (tile: Tile): string => {
   justify-content: center;
 }
 
-/* 字体样式 */
+/* 图片样式 - 翻转180度以抵消父容器的翻转 */
+.tile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+  user-select: none;
+  pointer-events: none;
+  transform: rotateX(180deg);
+}
+
+/* 字体样式（降级方案） */
 .opponent-discard-tile-icon {
   font-size: 18px;
   font-weight: bold;

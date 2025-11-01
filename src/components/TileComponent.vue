@@ -5,30 +5,51 @@
     @click="handleClick"
   >
     <div class="tile-face">
-      <span class="tile-icon" :class="getTileColorClass(tile)">{{ getTileIcon(tile) }}</span>
+      <!-- 图片模式 -->
+      <img 
+        v-if="useImage && !imageError"
+        :src="tileImagePath" 
+        :alt="tile.display"
+        class="tile-image"
+        @error="handleImageError"
+      />
+      <!-- 文字降级模式 -->
+      <span 
+        v-else
+        class="tile-icon" 
+        :class="getTileColorClass(tile)"
+      >
+        {{ getTileIcon(tile) }}
+      </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import type { Tile } from '../types/mahjong';
+import { getTileImagePath } from '../utils/tileImage';
 
 interface Props {
   tile: Tile;
   isSelected?: boolean;
   clickable?: boolean;
   small?: boolean;
+  useImage?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isSelected: false,
   clickable: false,
-  small: false
+  small: false,
+  useImage: true
 });
 
 const emit = defineEmits<{
   click: [tile: Tile]
 }>();
+
+const imageError = ref(false);
 
 const handleClick = () => {
   if (props.clickable) {
@@ -36,22 +57,28 @@ const handleClick = () => {
   }
 };
 
-// 将麻将牌转换为显示文字
+// 获取图片路径
+const tileImagePath = computed(() => getTileImagePath(props.tile));
+
+// 图片加载失败时的处理
+const handleImageError = () => {
+  imageError.value = true;
+};
+
+// 将麻将牌转换为显示文字（降级方案）
 const getTileIcon = (tile: Tile): string => {
-  // 直接使用 tile.display，它已经包含了正确的中文显示
   return tile.display;
 };
 
-// 根据牌的类型返回颜色类名
+// 根据牌的类型返回颜色类名（降级方案）
 const getTileColorClass = (tile: Tile): string => {
-  if (tile.type === 'man') return 'tile-man'; // 万子 - 蓝色
-  if (tile.type === 'pin') return 'tile-pin'; // 饼子 - 红色
-  if (tile.type === 'sou') return 'tile-sou'; // 索子 - 绿色
+  if (tile.type === 'man') return 'tile-man';
+  if (tile.type === 'pin') return 'tile-pin';
+  if (tile.type === 'sou') return 'tile-sou';
   if (tile.type === 'honor') {
-    // 字牌 - 根据具体牌区分颜色
-    if (tile.value === 5) return 'tile-honor-red'; // 中 - 红色
-    if (tile.value === 6) return 'tile-honor-green'; // 发 - 绿色
-    return 'tile-honor'; // 其他字牌 - 黑色
+    if (tile.value === 7) return 'tile-honor-red';
+    if (tile.value === 6) return 'tile-honor-green';
+    return 'tile-honor';
   }
   return '';
 };
@@ -129,7 +156,17 @@ const getTileColorClass = (tile: Tile): string => {
   transform: translateY(-10px);
 }
 
-/* 字体样式 */
+/* 图片样式 */
+.tile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 字体样式（降级方案） */
 .tile-icon {
   font-size: 28px;
   font-weight: bold;

@@ -38,6 +38,17 @@ export {
   getYakuList
 } from './scoring';
 
+export {
+  canPon,
+  canKan,
+  canChi,
+  canAnkan,
+  getPonTiles,
+  getKanTiles,
+  canRon,
+  checkMeldPriority
+} from './meld-checker';
+
 export type {
   TileGroup,
   MeldType,

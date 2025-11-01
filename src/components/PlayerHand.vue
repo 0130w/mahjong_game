@@ -7,10 +7,13 @@
           v-for="(tile, index) in player.hand"
           :key="tile.id"
           :tile="tile"
-          :isSelected="selectedTiles.includes(tile.id)"
+          :isSelected="props.selectedTiles.includes(tile.id)"
           :clickable="isCurrentPlayer"
-          :class="{ 'is-drawn-tile': index === player.hand.length - 1 && player.hand.length === 14 }"
-          @click="handleTileClick"
+          :class="{ 
+            'is-drawn-tile': tile.id === player.lastDrawnTileId,
+            'is-highlighted': highlightedTiles.has(tile.id)
+          }"
+          @click="handleTileClick(tile)"
         />
       </div>
       <div class="hand-tiles-hidden" v-else>
@@ -19,7 +22,7 @@
           :key="`hidden-${index}`"
           class="tile-back"
           :class="{ 
-            'is-drawn-tile-back': index === player.hand.length - 1 && player.hand.length === 14,
+            'is-drawn-tile-back': tile.id === player.lastDrawnTileId,
             'ai-selecting': tile.id === gameStore.aiSelectingTileId
           }"
         >
@@ -40,10 +43,14 @@ interface Props {
   player: Player;
   isCurrentPlayer: boolean;
   showHand?: boolean; // 是否显示手牌
+  highlightedTiles?: Set<string>; // 需要高亮的牌（用于副露选择）
+  selectedTiles?: string[]; // 已选中的牌（用于吃牌多选）
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showHand: true
+  showHand: true,
+  highlightedTiles: () => new Set(),
+  selectedTiles: () => []
 });
 
 const emit = defineEmits<{
@@ -51,7 +58,6 @@ const emit = defineEmits<{
 }>();
 
 const gameStore = useGameStore();
-const selectedTiles = ref<string[]>([]);
 
 const handleTileClick = (tile: Tile) => {
   emit('tileClick', tile.id);
@@ -112,6 +118,22 @@ const handleTileClick = (tile: Tile) => {
   margin-left: 8px;
 }
 
+/* 可用于副露的牌高亮 - 只显示边框，不漂浮 */
+.hand-tiles :deep(.is-highlighted) {
+  box-shadow: 0 0 15px rgba(76, 175, 80, 0.6), 0 0 30px rgba(76, 175, 80, 0.3);
+  border: 2px solid rgba(76, 175, 80, 0.8);
+  animation: meld-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes meld-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.6), 0 0 30px rgba(76, 175, 80, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(76, 175, 80, 0.8), 0 0 50px rgba(76, 175, 80, 0.5);
+  }
+}
+
 /* 对家的新摸牌在最左边，增加右边距 */
 .is-opponent .hand-tiles-hidden .is-drawn-tile-back {
   order: -1;
@@ -136,7 +158,7 @@ const handleTileClick = (tile: Tile) => {
 
 /* 对家区域翻转后，抬起方向需要反过来 */
 .is-opponent .tile-back.ai-selecting {
-  transform: translateY(15px) scale(1.05);
+  transform: translateY(-15px) scale(1.05);
 }
 
 /* 最底层白色层（对家翻转后在最上面） */

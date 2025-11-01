@@ -123,11 +123,21 @@ function canFormMelds(tiles: Map<string, TileGroup>): boolean {
   return false;
 }
 
+/**
+ * 检查是否听牌
+ * 听牌 = 手牌 + 任意1张牌 = 和牌
+ * 和牌 = n个面子(0-4) + 1个对子
+ * 所以听牌时手牌数量 = n×3 + 2 - 1 = n×3 + 1 张
+ * 有效数量：1, 4, 7, 10, 13 张
+ */
 export function checkReady(hand: Tile[]): boolean {
-  if (hand.length !== 13) return false;
+  // 手牌数量必须是 1, 4, 7, 10, 13 张之一
+  const validCounts = [1, 4, 7, 10, 13];
+  if (!validCounts.includes(hand.length)) return false;
   
   const allPossibleTiles = createAllUniqueTiles();
   
+  // 尝试每一张可能的牌，看加上后能否和牌
   for (const tile of allPossibleTiles) {
     if (checkWin([...hand, tile])) {
       return true;
@@ -137,12 +147,18 @@ export function checkReady(hand: Tile[]): boolean {
   return false;
 }
 
+/**
+ * 获取等待的牌（听哪些牌）
+ */
 export function getWaitingTiles(hand: Tile[]): Tile[] {
-  if (hand.length !== 13) return [];
+  // 手牌数量必须是 1, 4, 7, 10, 13 张之一
+  const validCounts = [1, 4, 7, 10, 13];
+  if (!validCounts.includes(hand.length)) return [];
   
   const allPossibleTiles = createAllUniqueTiles();
   const waitingTiles: Tile[] = [];
   
+  // 尝试每一张可能的牌，看加上后能否和牌
   for (const tile of allPossibleTiles) {
     if (checkWin([...hand, tile])) {
       waitingTiles.push(tile);
