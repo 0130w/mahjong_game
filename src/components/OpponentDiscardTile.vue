@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import type { Tile } from '../types/mahjong';
+import type { Tile } from '../utils/define';
 import { getTileImagePath } from '../utils/tileImage';
 
 interface Props {

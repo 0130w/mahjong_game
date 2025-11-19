@@ -8,7 +8,6 @@ import type { Tile } from '../types/mahjong';
 export function getTileImagePath(tile: Tile): string {
   const { type, value } = tile;
   
-  // 数字牌 - 使用日文命名风格
   if (type === 'man') {
     return `/assets/tiles/man/Man${value}.svg`;
   }
@@ -17,20 +16,6 @@ export function getTileImagePath(tile: Tile): string {
   }
   if (type === 'sou') {
     return `/assets/tiles/sou/Sou${value}.svg`;
-  }
-  
-  // 字牌 - 使用日文命名
-  if (type === 'honor') {
-    const honorMap: Record<number, string> = {
-      1: 'Ton',    // 东
-      2: 'Nan',    // 南
-      3: 'Shaa',   // 西
-      4: 'Pei',    // 北
-      5: 'Haku',   // 白
-      6: 'Hatsu',  // 发
-      7: 'Chun'    // 中
-    };
-    return `/assets/tiles/honor/${honorMap[value]}.svg`;
   }
   
   return '';

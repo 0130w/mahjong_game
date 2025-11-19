@@ -2,26 +2,18 @@
   <div v-if="melds.length > 0" class="player-meld-display">
     <div v-for="(meld, index) in melds" :key="index" class="meld-group">
       <div class="meld-tiles">
-        <PlayerDiscardTile
-          v-for="tile in meld.tiles"
-          :key="tile.id"
-          :tile="tile"
-          :class="{ 
-            'ankan-tile': meld.type === 'ankan' && !meld.isOpen,
-            'called-tile': tile.id === meld.calledTileId
-          }"
-        />
+        <PlayerDiscardTile v-for="tile in meld.tiles" :key="tile.id" :tile="tile" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { MeldGroup } from '../types/mahjong';
+import type { Meld } from '../utils/define';
 import PlayerDiscardTile from './PlayerDiscardTile.vue';
 
 defineProps<{
-  melds: MeldGroup[];
+  melds: Meld[];
 }>();
 </script>
 

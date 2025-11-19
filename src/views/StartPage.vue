@@ -1,38 +1,28 @@
 <template>
   <div class="start-page">
     <div class="background-animation">
-      <div class="tile-float" v-for="i in 20" :key="i" :style="getFloatStyle(i)">
+      <div class="tile-float" v-for="i in 20" :key="i" :style="getFloatStyle()">
         {{ getRandomTile() }}
       </div>
     </div>
-    
+
     <div class="start-container">
       <div class="game-logo">
         <div class="logo-icon">🀄</div>
-        <h1 class="game-title">谁是雀神</h1>
+        <h1 class="game-title">血战川麻馆</h1>
         <h2 class="game-subtitle">双人麻将</h2>
       </div>
-      
+
       <div class="start-content">
-        <div class="game-description">
-          <p>麻将...可是很恐怖的</p>
-        </div>
-        
+
         <div class="start-actions">
           <button @click="startGame" class="btn-start">
             <span class="btn-text">开始游戏</span>
             <span class="btn-icon">▶</span>
           </button>
-          
-          <div class="game-features">
-            <!-- <div class="feature-item">
-              <span class="feature-icon">👥</span>
-              <span class="feature-text">双人对战</span>
-            </div> -->
-          </div>
         </div>
       </div>
-      
+
       <div class="start-footer">
         <p class="version-info">Version 1.0.0</p>
       </div>
@@ -47,21 +37,21 @@ import { useGameStore } from '../stores/gameStore';
 const router = useRouter();
 const gameStore = useGameStore();
 
-const tiles = ['🀇', '🀈', '🀉', '🀊', '🀋', '🀌', '🀍', '🀎', '🀏', 
-               '🀙', '🀚', '🀛', '🀜', '🀝', '🀞', '🀟', '🀠', '🀡',
-               '🀐', '🀑', '🀒', '🀓', '🀔', '🀕', '🀖', '🀗', '🀘',
-               '🀀', '🀁', '🀂', '🀃', '🀄', '🀅', '🀆'];
+const tiles = ['🀇', '🀈', '🀉', '🀊', '🀋', '🀌', '🀍', '🀎', '🀏',
+  '🀙', '🀚', '🀛', '🀜', '🀝', '🀞', '🀟', '🀠', '🀡',
+  '🀐', '🀑', '🀒', '🀓', '🀔', '🀕', '🀖', '🀗', '🀘',
+  '🀀', '🀁', '🀂', '🀃', '🀄', '🀅', '🀆'];
 
 const getRandomTile = () => {
   return tiles[Math.floor(Math.random() * tiles.length)];
 };
 
-const getFloatStyle = (index: number) => {
+const getFloatStyle = () => {
   const left = Math.random() * 100;
   const animationDelay = Math.random() * 5;
   const animationDuration = 10 + Math.random() * 10;
   const fontSize = 30 + Math.random() * 40;
-  
+
   return {
     left: `${left}%`,
     animationDelay: `${animationDelay}s`,
@@ -111,6 +101,7 @@ const startGame = () => {
   0% {
     transform: translateY(-100px) rotate(0deg);
   }
+
   100% {
     transform: translateY(100vh) rotate(360deg);
   }
@@ -125,7 +116,7 @@ const startGame = () => {
   padding: 60px 40px;
   background: linear-gradient(135deg, rgba(26, 35, 50, 0.95) 0%, rgba(15, 20, 25, 0.95) 100%);
   border-radius: 30px;
-  box-shadow: 
+  box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 215, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -146,9 +137,12 @@ const startGame = () => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.05);
   }
@@ -207,7 +201,7 @@ const startGame = () => {
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 
+  box-shadow:
     0 10px 30px rgba(255, 215, 0, 0.4),
     0 0 0 2px rgba(255, 215, 0, 0.2);
   display: flex;
@@ -233,7 +227,7 @@ const startGame = () => {
 
 .btn-start:hover {
   transform: translateY(-3px) scale(1.05);
-  box-shadow: 
+  box-shadow:
     0 15px 40px rgba(255, 215, 0, 0.6),
     0 0 0 3px rgba(255, 215, 0, 0.3);
 }
@@ -312,28 +306,28 @@ const startGame = () => {
   .start-container {
     padding: 40px 30px;
   }
-  
+
   .logo-icon {
     font-size: 80px;
   }
-  
+
   .game-title {
     font-size: 36px;
   }
-  
+
   .game-subtitle {
     font-size: 18px;
   }
-  
+
   .btn-start {
     padding: 16px 40px;
     font-size: 20px;
   }
-  
+
   .game-features {
     gap: 15px;
   }
-  
+
   .feature-item {
     padding: 12px 16px;
   }

@@ -2,36 +2,19 @@
   <div v-if="melds.length > 0" class="meld-display">
     <div v-for="(meld, index) in melds" :key="index" class="meld-group">
       <div class="meld-tiles">
-        <TileComponent
-          v-for="tile in meld.tiles"
-          :key="tile.id"
-          :tile="tile"
-          :clickable="false"
-          :class="{ 'ankan-tile': meld.type === 'ankan' && !meld.isOpen }"
-        />
+        <TileComponent v-for="tile in meld.tiles" :key="tile.id" :tile="tile" :clickable="false" />
       </div>
-      <div class="meld-label">{{ getMeldLabel(meld.type) }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { MeldGroup } from '../types/mahjong';
+import type { Meld } from '../utils/define';
 import TileComponent from './TileComponent.vue';
 
 defineProps<{
-  melds: MeldGroup[];
+  melds: Meld[];
 }>();
-
-function getMeldLabel(type: string): string {
-  const labels: Record<string, string> = {
-    pon: '碰',
-    kan: '杠',
-    chi: '吃',
-    ankan: '暗杠'
-  };
-  return labels[type] || '';
-}
 </script>
 
 <style scoped>

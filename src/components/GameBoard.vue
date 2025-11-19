@@ -3,17 +3,14 @@
     <div class="game-container">
       <!-- 对家副露区 - 左侧 -->
       <div class="meld-area meld-area-opponent">
-        <OpponentMeldDisplay :melds="gameStore.players[1]!.melds" />
+        <OpponentMeldDisplay :melds="gameStore.players[PlayerID.PLAYER_1]!.melds" />
       </div>
 
       <!-- 玩家2（对手）- 上方 -->
       <div class="player-area player-top">
         <div class="player-section">
-          <PlayerHand 
-            :player="gameStore.players[1]!" 
-            :isCurrentPlayer="gameStore.currentPlayerIndex === 1"
-            :showHand="false"
-          />
+          <PlayerHand :player="gameStore.players[PlayerID.PLAYER_1]!"
+            :isCurrentPlayer="gameStore.currentPlayerIndex === PlayerID.PLAYER_1" :showHand="false" />
         </div>
       </div>
 
@@ -23,34 +20,18 @@
           <div class="discard-pool">
             <div class="discard-section opponent-discards">
               <div class="discard-tiles">
-                <OpponentDiscardTile
-                  v-for="(tile, index) in gameStore.players[1]!.discards"
-                  :key="`p1-discard-${index}`"
-                  :tile="tile"
-                />
+                <OpponentDiscardTile v-for="(tile, index) in gameStore.players[1]!.discards"
+                  :key="`p1-discard-${index}`" :tile="tile" />
               </div>
             </div>
-            
+
             <div class="table-center">
-              <GameInfoPanel
-                :roundNumber="gameStore.roundNumber"
-                :wallCount="gameStore.wall.length"
-                :playerName="gameStore.players[0]?.name || '玩家'"
-                :playerScore="gameStore.players[0]?.score || 0"
-                :opponentName="gameStore.players[1]?.name || 'AI'"
-                :opponentScore="gameStore.players[1]?.score || 0"
-                :playerWind="gameStore.players[0]?.isDealer ? '東' : '南'"
-                :opponentWind="gameStore.players[1]?.isDealer ? '東' : '南'"
-              />
             </div>
-            
+
             <div class="discard-section player-discards">
               <div class="discard-tiles">
-                <PlayerDiscardTile
-                  v-for="(tile, index) in gameStore.players[0]!.discards"
-                  :key="`p0-discard-${index}`"
-                  :tile="tile"
-                />
+                <PlayerDiscardTile v-for="(tile, index) in gameStore.players[0]!.discards" :key="`p0-discard-${index}`"
+                  :tile="tile" />
               </div>
             </div>
           </div>
@@ -59,605 +40,46 @@
 
       <!-- 自家副露区 - 右侧 -->
       <div class="meld-area meld-area-self">
-        <PlayerMeldDisplay :melds="gameStore.players[0]!.melds" />
+        <PlayerMeldDisplay :melds="gameStore.players[PlayerID.PLAYER_0]!.melds" />
       </div>
 
       <!-- 玩家1（你）- 下方 -->
       <div class="player-area player-bottom">
         <div class="player-section">
           <div class="player-with-controls">
-            <PlayerHand 
-              :player="gameStore.players[0]!" 
-              :isCurrentPlayer="isPlayerHandClickable"
-              :showHand="true"
-              :highlightedTiles="availableTilesForMeld"
-              :selectedTiles="selectedChiTileIds"
-              @tileClick="handleTileClick"
-            />
-          
-          <!-- 手牌右侧的操作按钮 -->
-          <div class="hand-controls">
-            <!-- 正常打牌阶段 -->
-            <template v-if="gameStore.phase === 'playing' && gameStore.currentPlayerIndex === 0">
-              <button 
-                v-if="canPlayerDiscard && !gameStore.canDeclareReady"
-                @click="discardSelectedTile" 
-                class="btn-hand-action btn-discard"
-                :disabled="!selectedTileId"
-              >
-                切
-              </button>
-              <button 
-                v-if="gameStore.canDeclareReady"
-                @click="declareReadyWithDiscard" 
-                class="btn-hand-action btn-ready"
-                :disabled="!selectedTileId"
-              >
-                听牌
-              </button>
-            </template>
-            
-            <!-- 副露选择阶段 -->
-            <template v-if="gameStore.phase === 'waiting_meld' && playerMeldOptions.length > 0">
-              <div class="meld-actions-container">
-                <div v-if="selectedChiTileIds.length > 0" class="chi-hint">
-                  已选 {{ selectedChiTileIds.length }}/2 张
-                </div>
-                <div class="meld-buttons-row">
-                  <button
-                    v-for="option in availableMeldActions"
-                    :key="option.action"
-                    @click="handleMeldAction(option.action)"
-                    class="btn-hand-action btn-meld"
-                    :class="[
-                      `btn-meld-${option.action}`,
-                      { 'is-active': option.action === 'chi' && canExecuteMeld('chi') }
-                    ]"
-                    :disabled="option.action === 'chi' && !canExecuteMeld(option.action)"
-                  >
-                    {{ option.label }}
-                  </button>
-                  <button
-                    @click="handleMeldSkip"
-                    class="btn-hand-action btn-skip-meld"
-                  >
-                    跳过
-                  </button>
-                </div>
-              </div>
-            </template>
+            <PlayerHand :player="gameStore.players[PlayerID.PLAYER_0]!" :isCurrentPlayer="isPlayerHandClickable"
+              :showHand="true" @tileClick="handleTileClick" />
           </div>
-        </div>
         </div>
       </div>
     </div>
-
-    <!-- 移除弹窗式的副露选项 -->
-
-    <!-- 游戏控制区（简化，只显示重要信息） -->
-    <div class="game-controls" v-if="gameStore.phase !== 'playing' && gameStore.phase !== 'can_declare_ready' && gameStore.phase !== 'waiting_meld'">
-      <div v-if="gameStore.phase === 'draw_four'">
-        <p class="info-text">对手猜牌失败！</p>
-        <p class="hint-text">听牌者摸4张牌，检查是否自摸</p>
-        
-        <!-- 显示上一轮猜测的牌（如果有） -->
-        <div v-if="gameStore.guessedTiles.length > 0" class="guessed-display">
-          <p>上一轮猜测的牌：</p>
-          <div class="guess-tiles">
-            <TileComponent
-              v-for="tile in gameStore.guessedTiles"
-              :key="tile.id"
-              :tile="tile"
-            />
-          </div>
-        </div>
-        
-        <!-- 显示上一轮摸到的4张牌（如果有） -->
-        <div v-if="gameStore.drawnFourTiles.length > 0" class="drawn-display">
-          <p>上一轮摸到的4张牌：</p>
-          <div class="guess-tiles">
-            <TileComponent
-              v-for="tile in gameStore.drawnFourTiles"
-              :key="tile.id"
-              :tile="tile"
-            />
-          </div>
-        </div>
-        
-        <button 
-          v-if="gameStore.readyPlayerIndex === 0" 
-          @click="drawFourTiles" 
-          class="btn btn-primary"
-        >
-          摸4张牌
-        </button>
-        <p v-else>等待对手摸牌...</p>
-      </div>
-
-      <div v-else-if="gameStore.phase === 'ready_declared'">
-        <p class="info-text">{{ gameStore.readyPlayer?.name }} 已宣告听牌！</p>
-        <p class="hint-text">{{ gameStore.readyPlayerIndex === 0 ? '等待对手猜牌...' : '请猜测听牌的牌型' }}</p>
-        
-        <!-- 显示摸到的4张牌 -->
-        <div v-if="gameStore.drawnFourTiles.length > 0" class="drawn-display">
-          <p>摸到的4张牌：</p>
-          <div class="guess-tiles">
-            <TileComponent
-              v-for="tile in gameStore.drawnFourTiles"
-              :key="tile.id"
-              :tile="tile"
-            />
-          </div>
-        </div>
-        
-        <!-- 显示已猜测的牌 -->
-        <div v-if="gameStore.guessedTiles.length > 0" class="guessed-display">
-          <p>猜测的牌：</p>
-          <div class="guess-tiles">
-            <TileComponent
-              v-for="tile in gameStore.guessedTiles"
-              :key="tile.id"
-              :tile="tile"
-            />
-          </div>
-        </div>
-        
-        <div v-if="gameStore.readyPlayerIndex === 1">
-          <!-- 玩家2听牌，玩家1猜牌 -->
-          <p>请选择2张牌进行猜测：</p>
-          <div class="guess-tiles">
-            <TileComponent
-              v-for="tile in availableTiles"
-              :key="tile.id"
-              :tile="tile"
-              :isSelected="guessedTileIds.includes(tile.id)"
-              :clickable="true"
-              @click="toggleGuessTile(tile)"
-            />
-          </div>
-          <button 
-            @click="submitGuess" 
-            class="btn btn-warning"
-            :disabled="guessedTileIds.length !== 2"
-          >
-            确认猜测
-          </button>
-        </div>
-        <div v-else>
-          <!-- 玩家1听牌，等待AI猜牌 -->
-          <p>等待对手猜牌...</p>
-        </div>
-      </div>
-
-      <div v-else-if="gameStore.phase === 'finished'">
-        <p class="info-text">本局结束</p>
-        
-        <!-- 显示猜测的牌（如果有） -->
-        <div v-if="gameStore.guessedTiles.length > 0" class="guessed-display">
-          <p>最后猜测的牌：</p>
-          <div class="guess-tiles">
-            <TileComponent
-              v-for="tile in gameStore.guessedTiles"
-              :key="tile.id"
-              :tile="tile"
-            />
-          </div>
-        </div>
-        
-        <!-- 显示摸到的4张牌（如果有） -->
-        <div v-if="gameStore.drawnFourTiles.length > 0" class="drawn-display">
-          <p>摸到的4张牌：</p>
-          <div class="guess-tiles">
-            <TileComponent
-              v-for="tile in gameStore.drawnFourTiles"
-              :key="tile.id"
-              :tile="tile"
-            />
-          </div>
-        </div>
-        
-        <button @click="nextRound" class="btn btn-primary">下一局</button>
-        <button @click="startGame" class="btn btn-secondary">重新开始</button>
-      </div>
-    </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed } from 'vue';
 import { useGameStore } from '../stores/gameStore';
 import PlayerHand from './PlayerHand.vue';
-import TileComponent from './TileComponent.vue';
 import PlayerDiscardTile from './PlayerDiscardTile.vue';
 import OpponentDiscardTile from './OpponentDiscardTile.vue';
-import GameInfoPanel from './GameInfoPanel.vue';
 import PlayerMeldDisplay from './PlayerMeldDisplay.vue';
 import OpponentMeldDisplay from './OpponentMeldDisplay.vue';
-import MeldOptions from './MeldOptions.vue';
-import type { Tile } from '../types/mahjong';
-import type { MeldOption } from '../types/mahjong';
-import { createFullWall } from '../utils/tiles';
+import type { Tile } from '../utils/define';
+import { PlayerID } from '../utils/define';
 
-const router = useRouter();
 const gameStore = useGameStore();
-const selectedTileId = ref<string | null>(null);
-const guessedTileIds = ref<string[]>([]);
-const selectedChiTileIds = ref<string[]>([]); // 吃牌时选中的手牌ID列表
+const selectedTile = ref<Tile>() || null;
 
-const backToStart = () => {
-  router.push('/');
-};
-
-const isReadyPlayer = computed(() => gameStore.readyPlayerIndex === 0);
-
-const phaseText = computed(() => {
-  const phases: Record<string, string> = {
-    initial: '未开始',
-    playing: '进行中',
-    can_declare_ready: '可宣告听牌',
-    draw_four: '摸4张牌',
-    ready_declared: '猜牌中',
-    finished: '已结束'
-  };
-  return phases[gameStore.phase] || gameStore.phase;
-});
-
-const availableTiles = computed(() => {
-  // 获取所有可能的牌（去重）
-  const allTiles = createFullWall();
-  const uniqueTiles: Tile[] = [];
-  const seen = new Set<string>();
-  
-  for (const tile of allTiles) {
-    const key = `${tile.type}-${tile.value}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      uniqueTiles.push(tile);
-    }
-  }
-  
-  return uniqueTiles;
-});
-
-const startGame = () => {
-  gameStore.startNewGame();
-  selectedTileId.value = null;
-  guessedTileIds.value = [];
-};
-
-// AI逻辑已经在 gameStore 的 opponentAutoPlay 中处理
-
-// AI猜牌
-const aiGuess = () => {
-  if (gameStore.readyPlayerIndex === 0 && gameStore.phase === 'ready_declared') {
-    // AI随机选择2张牌猜测
-    setTimeout(() => {
-      const tiles = availableTiles.value;
-      const randomTiles = [];
-      const usedIndices = new Set<number>();
-      
-      while (randomTiles.length < 2) {
-        const randomIndex = Math.floor(Math.random() * tiles.length);
-        if (!usedIndices.has(randomIndex)) {
-          usedIndices.add(randomIndex);
-          randomTiles.push(tiles[randomIndex]!);
-        }
-      }
-      
-      gameStore.guessTiles(randomTiles);
-    }, 1000);
-  }
-};
-
-// AI摸4张牌
-const aiDrawFour = () => {
-  if (gameStore.readyPlayerIndex === 1 && gameStore.phase === 'draw_four') {
-    setTimeout(() => {
-      gameStore.drawFourTiles();
-    }, 1000);
-  }
-};
-
-// 监听回合变化，触发AI操作
-// AI 打牌逻辑已经在 gameStore.startNewTurn() 中自动触发
-
-// 监听游戏阶段变化，触发AI操作
-watch(() => gameStore.phase, (newPhase) => {
-  if (newPhase === 'draw_four') {
-    // 进入摸4张牌阶段
-    if (gameStore.readyPlayerIndex === 1) {
-      // AI听牌，自动摸4张牌
-      aiDrawFour();
-    }
-    // 如果是玩家听牌，等待玩家点击按钮摸牌
-  } else if (newPhase === 'ready_declared') {
-    // 进入猜牌阶段
-    if (gameStore.readyPlayerIndex === 1) {
-      // 对手听牌，玩家需要猜牌（等待玩家操作）
-    } else if (gameStore.readyPlayerIndex === 0) {
-      // 玩家听牌，AI自动猜牌（已在 declareReadyWithDiscard 中触发）
-    }
-  }
-});
-
-const handleTileClick = (tileId: string) => {
-  // 如果在副露阶段,处理吃牌的多选逻辑
-  if (gameStore.phase === 'waiting_meld') {
-    const index = selectedChiTileIds.value.indexOf(tileId);
-    if (index !== -1) {
-      // 已选中,取消选择
-      selectedChiTileIds.value.splice(index, 1);
-    } else if (selectedChiTileIds.value.length < 2) {
-      // 未选中且未达到2张,添加选择
-      selectedChiTileIds.value.push(tileId);
-    }
-    return;
-  }
-  
+const handleTileClick = (tile: Tile) => {
   // 正常打牌阶段 - 只有当前玩家才能打牌
   if (gameStore.currentPlayerIndex !== 0) return;
-  selectedTileId.value = tileId;
+  selectedTile.value = tile;
 };
 
-const discardSelectedTile = () => {
-  if (selectedTileId.value && gameStore.currentPlayerIndex === 0) {
-    gameStore.discardTile(0, selectedTileId.value);
-    selectedTileId.value = null;
-  }
-};
-
-const declareReadyWithDiscard = () => {
-  if (!selectedTileId.value) {
-    alert('请先选择要打出的牌！');
-    return;
-  }
-  
-  const success = gameStore.declareReadyWithDiscard(0, selectedTileId.value);
-  if (!success) {
-    alert('无法宣告听牌！请检查打出这张牌后是否能形成听牌状态。');
-  } else {
-    selectedTileId.value = null;
-  }
-};
-
-const toggleGuessTile = (tile: Tile) => {
-  const index = guessedTileIds.value.findIndex(id => id === tile.id);
-  if (index !== -1) {
-    guessedTileIds.value.splice(index, 1);
-  } else if (guessedTileIds.value.length < 2) {
-    guessedTileIds.value.push(tile.id);
-  }
-};
-
-const submitGuess = () => {
-  const tiles = guessedTileIds.value.map(id => 
-    availableTiles.value.find(t => t.id === id)!
-  );
-  
-  const success = gameStore.guessTiles(tiles);
-  
-  if (!success) {
-    // 猜测失败，进入摸4张牌阶段
-    guessedTileIds.value = [];
-  }
-};
-
-const drawFourTiles = () => {
-  gameStore.drawFourTiles();
-  guessedTileIds.value = [];
-};
-
-const nextRound = () => {
-  gameStore.nextRound();
-  selectedTileId.value = null;
-  guessedTileIds.value = [];
-};
-
-const playerMeldOptions = computed(() => {
-  return gameStore.availableMeldOptions.filter(opt => opt.playerIndex === 0);
-});
-
-const canPlayerDiscard = computed(() => {
-  const player = gameStore.players[0]!;
-  const expectedAfterDraw = gameStore.expectedHandCountAfterDraw(0);
-  const expectedBeforeDraw = gameStore.expectedHandCountBeforeDraw(0);
-  return player.hand.length === expectedAfterDraw || player.hand.length === expectedBeforeDraw;
-});
-
-// 玩家手牌是否可点击（正常回合或副露阶段都可以点击）
 const isPlayerHandClickable = computed(() => {
-  return gameStore.currentPlayerIndex === 0 || gameStore.phase === 'waiting_meld';
+  return gameStore.currentPlayerIndex === 0
 });
 
-// 获取可用的副露动作（去重）
-const availableMeldActions = computed(() => {
-  const actions = new Set<string>();
-  const actionLabels: Record<string, string> = {
-    ron: '荣和',
-    kan: '杠',
-    pon: '碰',
-    chi: '吃'
-  };
-  
-  playerMeldOptions.value.forEach(opt => {
-    actions.add(opt.action);
-  });
-  
-  return Array.from(actions).map(action => ({
-    action,
-    label: actionLabels[action] || action
-  }));
-});
-
-// 当前选择的副露动作
-const selectedMeldAction = ref<string | null>(null);
-
-// 获取可用于"吃"的手牌（只有吃需要选择）
-const availableTilesForMeld = computed(() => {
-  // 在副露阶段，如果有吃的选项，高亮所有可能用于吃的手牌
-  if (gameStore.phase !== 'waiting_meld') return new Set<string>();
-  
-  // 收集所有可能用于吃的牌的类型和数值
-  const tileKeys = new Set<string>();
-  playerMeldOptions.value
-    .filter(opt => opt.action === 'chi')
-    .forEach(opt => {
-      opt.tiles.forEach(tile => {
-        if (tile.id !== gameStore.lastDiscardedTile?.id) {
-          tileKeys.add(`${tile.type}-${tile.value}`);
-        }
-      });
-    });
-  
-  // 找到玩家手牌中所有匹配的牌的ID
-  const tileIds = new Set<string>();
-  const player = gameStore.players[0];
-  if (player) {
-    player.hand.forEach(tile => {
-      const key = `${tile.type}-${tile.value}`;
-      if (tileKeys.has(key)) {
-        tileIds.add(tile.id);
-      }
-    });
-  }
-  
-  return tileIds;
-});
-
-// 获取吃的所有可能组合（用于显示选项）
-const chiOptions = computed(() => {
-  return playerMeldOptions.value.filter(opt => opt.action === 'chi');
-});
-
-// 检查是否可以执行副露
-const canExecuteMeld = (action: string) => {
-  // 碰、杠、荣和不需要选牌，直接可以执行
-  if (action === 'pon' || action === 'kan' || action === 'ron') {
-    return true;
-  }
-  
-  // 吃需要选择2张手牌
-  if (action === 'chi') {
-    if (selectedChiTileIds.value.length !== 2) {
-      return false;
-    }
-    
-    // 检查选中的2张牌加上对家打出的牌是否能组成顺子
-    const discardedTile = gameStore.lastDiscardedTile;
-    if (!discardedTile) {
-      return false;
-    }
-    
-    // 获取选中的2张牌
-    const player = gameStore.players[0];
-    if (!player) return false;
-    
-    const selectedTiles = selectedChiTileIds.value
-      .map(id => player.hand.find(t => t.id === id))
-      .filter(t => t !== undefined);
-    
-    if (selectedTiles.length !== 2) return false;
-    
-    // 检查3张牌（2张手牌 + 1张对家打出的牌）能否组成顺子
-    const allThreeTiles = [...selectedTiles, discardedTile];
-    
-    // 必须是同一种花色
-    const types = new Set(allThreeTiles.map(t => t.type));
-    if (types.size !== 1) {
-      return false;
-    }
-    
-    const tileType = allThreeTiles[0]!.type;
-    
-    // 字牌不能吃
-    if (tileType === 'honor') {
-      return false;
-    }
-    
-    // 获取数值并排序
-    const values = allThreeTiles.map(t => t.value).sort((a, b) => a - b);
-    
-    // 检查是否是连续的3个数字
-    const isSequence = values[1] === values[0] + 1 && values[2] === values[1] + 1;
-    
-    return isSequence;
-  }
-  
-  return false;
-};
-
-// 处理副露动作点击
-const handleMeldAction = (action: string) => {
-  // 碰、杠、荣和：直接执行
-  if (action === 'pon' || action === 'kan' || action === 'ron') {
-    const option = playerMeldOptions.value.find(opt => opt.action === action);
-    if (option) {
-      gameStore.executeMeld(option);
-      selectedTileId.value = null;
-      selectedMeldAction.value = null;
-      selectedChiTileIds.value = [];
-    }
-    return;
-  }
-  
-  // 吃：需要选择2张手牌
-  if (action === 'chi') {
-    if (selectedChiTileIds.value.length !== 2) {
-      return; // 必须选择2张牌
-    }
-    
-    // 找到匹配的吃法并执行
-    const discardedTile = gameStore.lastDiscardedTile;
-    if (!discardedTile) return;
-    
-    const player = gameStore.players[0];
-    if (!player) return;
-    
-    // 获取选中的2张牌
-    const selectedTiles = selectedChiTileIds.value
-      .map(id => player.hand.find(t => t.id === id))
-      .filter(t => t !== undefined);
-    
-    if (selectedTiles.length !== 2) return;
-    
-    // 根据类型和数值找到匹配的吃法选项
-    const selectedValues = selectedTiles.map(t => t.value).sort((a, b) => a - b);
-    const discardedValue = discardedTile.value;
-    const allValues = [...selectedValues, discardedValue].sort((a, b) => a - b);
-    
-    const matchingOption = chiOptions.value.find(opt => {
-      const optionValues = opt.tiles.map(t => t.value).sort((a, b) => a - b);
-      return optionValues.length === 3 &&
-             optionValues[0] === allValues[0] &&
-             optionValues[1] === allValues[1] &&
-             optionValues[2] === allValues[2];
-    });
-    
-    if (matchingOption) {
-      // 创建一个新的选项，使用玩家实际选中的牌
-      const newOption = {
-        ...matchingOption,
-        tiles: [...selectedTiles, discardedTile]
-      };
-      gameStore.executeMeld(newOption);
-      selectedTileId.value = null;
-      selectedMeldAction.value = null;
-      selectedChiTileIds.value = [];
-    }
-  }
-};
-
-const handleMeldSelect = (option: MeldOption) => {
-  gameStore.executeMeld(option);
-};
-
-const handleMeldSkip = () => {
-  gameStore.skipMeld();
-  selectedChiTileIds.value = [];
-  selectedMeldAction.value = null;
-};
 </script>
 
 <style scoped>
@@ -666,7 +88,7 @@ const handleMeldSkip = () => {
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  background: 
+  background:
     radial-gradient(ellipse at center, rgba(30, 40, 50, 1) 0%, rgba(15, 20, 25, 1) 100%),
     linear-gradient(135deg, #0f1419 0%, #1a1f2e 50%, #0f1419 100%);
   background-attachment: fixed;
@@ -683,7 +105,7 @@ const handleMeldSkip = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.3), transparent),
     radial-gradient(2px 2px at 60% 70%, rgba(255, 255, 255, 0.2), transparent),
     radial-gradient(1px 1px at 50% 50%, rgba(255, 255, 255, 0.2), transparent),
@@ -696,8 +118,13 @@ const handleMeldSkip = () => {
 }
 
 @keyframes stars {
-  from { background-position: 0 0; }
-  to { background-position: 100% 100%; }
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 100% 100%;
+  }
 }
 
 /* 游戏容器 */
@@ -713,9 +140,9 @@ const handleMeldSkip = () => {
   content: '';
   position: absolute;
   inset: 0;
-  background: 
+  background:
     radial-gradient(ellipse at center, #1a4d2e 0%, #0f2818 100%);
-  box-shadow: 
+  box-shadow:
     inset 0 0 100px rgba(0, 0, 0, 0.4);
   z-index: 0;
 }
@@ -725,16 +152,16 @@ const handleMeldSkip = () => {
   content: '';
   position: absolute;
   inset: 0;
-  background: 
-    repeating-linear-gradient(0deg, 
-      transparent 0px, 
-      rgba(255, 255, 255, 0.02) 1px, 
-      transparent 2px, 
+  background:
+    repeating-linear-gradient(0deg,
+      transparent 0px,
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 2px,
       transparent 4px),
-    repeating-linear-gradient(90deg, 
-      transparent 0px, 
-      rgba(255, 255, 255, 0.02) 1px, 
-      transparent 2px, 
+    repeating-linear-gradient(90deg,
+      transparent 0px,
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 2px,
       transparent 4px);
   pointer-events: none;
   z-index: 0;
@@ -844,38 +271,95 @@ const handleMeldSkip = () => {
 }
 
 /* 对手舍牌区 - 反转z-index，让上面的行覆盖下面的行 */
-.opponent-discards .discard-tiles > * {
+.opponent-discards .discard-tiles>* {
   position: relative;
 }
 
-.opponent-discards .discard-tiles > *:nth-child(1) { z-index: 100; }
-.opponent-discards .discard-tiles > *:nth-child(2) { z-index: 99; }
-.opponent-discards .discard-tiles > *:nth-child(3) { z-index: 98; }
-.opponent-discards .discard-tiles > *:nth-child(4) { z-index: 97; }
-.opponent-discards .discard-tiles > *:nth-child(5) { z-index: 96; }
-.opponent-discards .discard-tiles > *:nth-child(6) { z-index: 95; }
-.opponent-discards .discard-tiles > *:nth-child(7) { z-index: 94; }
-.opponent-discards .discard-tiles > *:nth-child(8) { z-index: 93; }
-.opponent-discards .discard-tiles > *:nth-child(9) { z-index: 92; }
-.opponent-discards .discard-tiles > *:nth-child(10) { z-index: 91; }
-.opponent-discards .discard-tiles > *:nth-child(11) { z-index: 90; }
-.opponent-discards .discard-tiles > *:nth-child(12) { z-index: 89; }
-.opponent-discards .discard-tiles > *:nth-child(13) { z-index: 88; }
-.opponent-discards .discard-tiles > *:nth-child(14) { z-index: 87; }
-.opponent-discards .discard-tiles > *:nth-child(15) { z-index: 86; }
-.opponent-discards .discard-tiles > *:nth-child(16) { z-index: 85; }
-.opponent-discards .discard-tiles > *:nth-child(17) { z-index: 84; }
-.opponent-discards .discard-tiles > *:nth-child(18) { z-index: 83; }
-.opponent-discards .discard-tiles > *:nth-child(19) { z-index: 82; }
-.opponent-discards .discard-tiles > *:nth-child(20) { z-index: 81; }
+.opponent-discards .discard-tiles>*:nth-child(1) {
+  z-index: 100;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(2) {
+  z-index: 99;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(3) {
+  z-index: 98;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(4) {
+  z-index: 97;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(5) {
+  z-index: 96;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(6) {
+  z-index: 95;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(7) {
+  z-index: 94;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(8) {
+  z-index: 93;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(9) {
+  z-index: 92;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(10) {
+  z-index: 91;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(11) {
+  z-index: 90;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(12) {
+  z-index: 89;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(13) {
+  z-index: 88;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(14) {
+  z-index: 87;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(15) {
+  z-index: 86;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(16) {
+  z-index: 85;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(17) {
+  z-index: 84;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(18) {
+  z-index: 83;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(19) {
+  z-index: 82;
+}
+
+.opponent-discards .discard-tiles>*:nth-child(20) {
+  z-index: 81;
+}
 
 .table-center {
   order: 2;
   flex-shrink: 0;
   z-index: 1;
 }
-
-
 
 .game-controls {
   position: fixed;
@@ -890,7 +374,7 @@ const handleMeldSkip = () => {
   width: 90%;
   max-height: 200px;
   overflow-y: auto;
-  box-shadow: 
+  box-shadow:
     0 10px 40px rgba(0, 0, 0, 0.6),
     0 0 0 1px rgba(255, 215, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -905,6 +389,7 @@ const handleMeldSkip = () => {
     opacity: 0;
     transform: translateX(-50%) translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -941,7 +426,7 @@ const handleMeldSkip = () => {
   background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 152, 0, 0.2) 100%);
   border-radius: 10px;
   border: 2px solid rgba(255, 193, 7, 0.5);
-  box-shadow: 
+  box-shadow:
     0 4px 15px rgba(255, 193, 7, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   animation: pulse-glow 2s infinite;
@@ -949,11 +434,14 @@ const handleMeldSkip = () => {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { 
+
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
-  50% { 
+
+  50% {
     transform: scale(1.02);
     box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
@@ -966,7 +454,7 @@ const handleMeldSkip = () => {
   background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(46, 125, 50, 0.15) 100%);
   border-radius: 16px;
   border: 2px solid rgba(76, 175, 80, 0.4);
-  box-shadow: 
+  box-shadow:
     0 4px 20px rgba(76, 175, 80, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
@@ -1101,7 +589,8 @@ const handleMeldSkip = () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-top: 25px; /* 对齐手牌区域 */
+  padding-top: 25px;
+  /* 对齐手牌区域 */
 }
 
 .btn-hand-action {
@@ -1143,9 +632,12 @@ const handleMeldSkip = () => {
 }
 
 @keyframes pulse-ready {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
   }
+
   50% {
     box-shadow: 0 4px 20px rgba(76, 175, 80, 0.8);
   }
@@ -1180,9 +672,12 @@ const handleMeldSkip = () => {
 }
 
 @keyframes highlight-discard {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.4);
   }
+
   50% {
     box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.6);
   }
@@ -1207,6 +702,7 @@ const handleMeldSkip = () => {
     opacity: 0;
     transform: translateX(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -1251,9 +747,12 @@ const handleMeldSkip = () => {
 }
 
 @keyframes pulse-active {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
   }
+
   50% {
     box-shadow: 0 0 30px rgba(76, 175, 80, 1);
   }
@@ -1273,9 +772,12 @@ const handleMeldSkip = () => {
 }
 
 @keyframes pulse-ron {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
   }
+
   50% {
     box-shadow: 0 4px 20px rgba(255, 152, 0, 0.8);
   }

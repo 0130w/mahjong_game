@@ -3,29 +3,12 @@
     <!-- 手牌区域 -->
     <div class="hand-area">
       <div class="hand-tiles" v-if="showHand">
-        <TileComponent
-          v-for="(tile, index) in player.hand"
-          :key="tile.id"
-          :tile="tile"
-          :isSelected="props.selectedTiles.includes(tile.id)"
-          :clickable="isCurrentPlayer"
-          :class="{ 
-            'is-drawn-tile': tile.id === player.lastDrawnTileId,
-            'is-highlighted': highlightedTiles.has(tile.id)
-          }"
-          @click="handleTileClick(tile)"
-        />
+        <TileComponent v-for="tile in player.hand" :key="tile.id" :tile="tile"
+          :isSelected="props.selectedTile?.id === tile.id" :clickable="isCurrentPlayer"
+          :isLastGetTile="props.lastGetTile?.id === tile.id" @click="handleTileClick(tile)" />
       </div>
       <div class="hand-tiles-hidden" v-else>
-        <div 
-          v-for="(tile, index) in player.hand" 
-          :key="`hidden-${index}`"
-          class="tile-back"
-          :class="{ 
-            'is-drawn-tile-back': tile.id === player.lastDrawnTileId,
-            'ai-selecting': tile.id === gameStore.aiSelectingTileId
-          }"
-        >
+        <div v-for="(, index) in player.hand" :key="`hidden-${index}`" class="tile-back">
           <div class="tile-back-pattern"></div>
         </div>
       </div>
@@ -34,33 +17,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useGameStore } from '../stores/gameStore';
-import type { Player, Tile } from '../types/mahjong';
+import type { Tile, Player } from '../utils/define';
 import TileComponent from './TileComponent.vue';
 
 interface Props {
   player: Player;
   isCurrentPlayer: boolean;
   showHand?: boolean; // 是否显示手牌
-  highlightedTiles?: Set<string>; // 需要高亮的牌（用于副露选择）
-  selectedTiles?: string[]; // 已选中的牌（用于吃牌多选）
+  selectedTile?: Tile;
+  lastGetTile?: Tile; // 最后摸的牌
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showHand: true,
   highlightedTiles: () => new Set(),
-  selectedTiles: () => []
 });
 
 const emit = defineEmits<{
-  tileClick: [tileId: string]
+  tileClick: [tile: Tile]
 }>();
 
-const gameStore = useGameStore();
-
 const handleTileClick = (tile: Tile) => {
-  emit('tileClick', tile.id);
+  emit('tileClick', tile);
 };
 </script>
 
@@ -84,7 +62,8 @@ const handleTileClick = (tile: Tile) => {
 .hand-area {
   padding: 8px;
   background: transparent;
-  perspective: 1000px; /* 为3D变换设置透视 */
+  perspective: 1000px;
+  /* 为3D变换设置透视 */
 }
 
 .hand-tiles {
@@ -93,10 +72,13 @@ const handleTileClick = (tile: Tile) => {
   align-items: flex-end;
   flex-wrap: nowrap;
   gap: 1px;
-  min-height: 90px; /* 增加最小高度以容纳3D效果 */
+  min-height: 90px;
+  /* 增加最小高度以容纳3D效果 */
   overflow-x: auto;
-  overflow-y: visible; /* 允许Y轴溢出以显示抬起效果 */
-  padding-top: 20px; /* 增加顶部空间以防遮挡 */
+  overflow-y: visible;
+  /* 允许Y轴溢出以显示抬起效果 */
+  padding-top: 20px;
+  /* 增加顶部空间以防遮挡 */
   padding-bottom: 10px;
 }
 
@@ -108,8 +90,10 @@ const handleTileClick = (tile: Tile) => {
   gap: 1px;
   min-height: 90px;
   overflow-x: auto;
-  overflow-y: visible; /* 允许Y轴溢出以显示抬起效果 */
-  padding-top: 20px; /* 增加顶部空间以防遮挡 */
+  overflow-y: visible;
+  /* 允许Y轴溢出以显示抬起效果 */
+  padding-top: 20px;
+  /* 增加顶部空间以防遮挡 */
   padding-bottom: 10px;
 }
 
@@ -126,9 +110,12 @@ const handleTileClick = (tile: Tile) => {
 }
 
 @keyframes meld-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 15px rgba(76, 175, 80, 0.6), 0 0 30px rgba(76, 175, 80, 0.3);
   }
+
   50% {
     box-shadow: 0 0 25px rgba(76, 175, 80, 0.8), 0 0 50px rgba(76, 175, 80, 0.5);
   }
