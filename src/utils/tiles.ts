@@ -61,14 +61,3 @@ export function sortHand(hand: Tile[]): Tile[] {
     return a.value - b.value;
   });
 }
-
-export function discardSelectedTile(tile: Tile, player: Player) {
-  player.discards.push(tile);
-  player.hand = player.hand.filter(t => t.id !== tile.id);
-}
-
-export function getTile(player: Player, wall: Tile[]) {
-  const { dealt, remaining } = dealTiles(wall, 1);
-  player.hand = player.hand.concat(dealt);
-  wall = remaining;
-}

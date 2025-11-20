@@ -53,11 +53,13 @@
           <!-- 展示切牌按钮 -->
           <div v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0" class="discard-button"
             :class="{ disable: !selectedTile }" @click="handleDiscard">
+            切牌
           </div>
           <!-- 展示碰按钮 -->
           <div
             v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canPon"
             class="pon-button" @click="handlePon">
+            碰
           </div>
           <!-- 展示杠按钮 -->
           <div
@@ -94,7 +96,7 @@ import type { Tile } from '../utils/define';
 import { PlayerID } from '../utils/define';
 
 const gameStore = useGameStore();
-const selectedTile = ref<Tile>() || null;
+const selectedTile = ref<Tile | null>(null);
 
 const handleTileClick = (tile: Tile) => {
   if (gameStore.currentPlayerIndex !== 0) return;
@@ -105,7 +107,7 @@ const handleDiscard = () => {
   if (!selectedTile.value) return;
   gameStore.players[gameStore.currentPlayerIndex]!.handleDiscard(selectedTile.value);
   gameStore.players[gameStore.currentPlayerIndex]!.emitAction('discard');
-  selectedTile.value = undefined;
+  selectedTile.value = null;
 }
 
 const handlePon = () => {
@@ -384,6 +386,7 @@ const isPlayerHandClickable = computed(() => {
 }
 
 @keyframes highlight-discard {
+
   0%,
   100% {
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.4);

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import type { Tile } from '../utils/define';
 import { Player, PlayerID } from '../utils/define';
-import { createFullWall, shuffleWall, dealTiles, sortHand, getTile } from '../utils/tiles';
+import { createFullWall, shuffleWall, dealTiles, sortHand } from '../utils/tiles';
 import { ref } from 'vue';
 import type { GamePhase } from '../utils/define';
 
@@ -63,9 +63,10 @@ export const useGameStore = defineStore('game', () => {
     resetPlayersState();
     switch (action) {
       case 'discard':
-        opponent.checkStateWithTile(player.lastGetTile!);
-        doAction(await waitForPlayerAction(opponent, 20000), opponent, player);
-        break;
+        const discardTile = player.lastDiscardTile!;
+        opponent.checkStateWithTile(discardTile);
+        const opAction = await waitForPlayerAction(opponent, 20000);
+        return await doAction(opAction, opponent, player);
       case 'pon':
         break;
       case 'kan':
@@ -90,7 +91,7 @@ export const useGameStore = defineStore('game', () => {
       const player = players.value[currentPlayerIndex.value]!;
       const opponent = players.value[(currentPlayerIndex.value + 1) % players.value.length]!;
 
-      getTile(player, wall.value)
+      player.getTile(wall.value)
       player.checkStateWithoutTile();
 
       const action = await waitForPlayerAction(player, 20000);

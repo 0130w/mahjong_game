@@ -1,3 +1,5 @@
+import { dealTiles } from './tiles';
+
 // 麻将牌类型
 export type TileType = 'man' | 'pin' | 'sou'; // 万、筒、索
 
@@ -63,6 +65,13 @@ export class Player {
     this.actionListener = null;
   }
 
+  getTile(wall: Tile[]) {
+    const { dealt, remaining } = dealTiles(wall, 1);
+    this.hand.push(...dealt);
+    this.lastGetTile = dealt[0]!
+    wall = remaining;
+  }
+
   // 摸牌后检查状态，只需检查
   // 杠、暗杠、自摸
   checkStateWithoutTile() {
@@ -102,9 +111,11 @@ export class Player {
       this.hand = this.hand.filter(t => t.type != tile.type || t.value != tile.value);
     } else {
       // 加杠
-      this.melds = this.melds.filter(m => m.tile.value != tile.value && m.type == 'pon');
+      const ponIndex = this.melds.findIndex(m => m.type === 'pon' && m.tile.value === tile.value);
+      if (ponIndex >= 0) {
+        this.melds[ponIndex]!.type = 'kan';
+      }
     }
-    this.melds.push({ tile, type: 'kan' });
   }
 
   handleAnKan() {
