@@ -13,6 +13,7 @@ export const useGameStore = defineStore('game', () => {
   const roundNumber = ref(1);
   const players = ref<Player[]>([]);
   const discardOnly = ref<boolean>(false);
+  const isAIPlayer = (player: Player) => player.id !== PlayerID.PLAYER_0;
 
   // 开始新游戏 
   function startNewGame() {
@@ -72,6 +73,15 @@ export const useGameStore = defineStore('game', () => {
       player.checkStateWithoutTile();
     }
 
+    if (isAIPlayer(player)) {
+      const idx = Math.floor(Math.random() * player.hand.length);
+      const title = player.hand[idx]!;
+      player.handleDiscard(title);
+      player.hand = sortHand(player.hand);
+      await doAction('discard', player, opponent);
+      return;
+    }
+
     const action = await waitForPlayerAction(player, 20000);
 
     if (!action) {
@@ -89,6 +99,10 @@ export const useGameStore = defineStore('game', () => {
   async function doAction(action: string | null, player: Player, opponent: Player) {
     resetPlayersState();
     switch (action) {
+      case 'skip': {
+        currentPlayerIndex.value = player.id;
+        return;
+      }
       case 'discard': {
         const discardTile = player.lastDiscardTile!;
         opponent.checkStateWithTile(discardTile);
@@ -97,9 +111,14 @@ export const useGameStore = defineStore('game', () => {
           return;
         }
         currentPlayerIndex.value = opponent.id;
-        const opAction = await waitForPlayerAction(opponent, 20000);
 
-        return await doAction(opAction, opponent, player);
+        if (isAIPlayer(opponent)) {
+          // TODO: 优化成真正的AI逻辑
+          return await doAction('skip', opponent, player);
+        } else {
+          const opAction = await waitForPlayerAction(opponent, 20000);
+          return await doAction(opAction, opponent, player);
+        }
       }
       case 'pon': {
         const tile = opponent.lastDiscardTile!;
@@ -111,7 +130,6 @@ export const useGameStore = defineStore('game', () => {
       }
       case 'kan': {
         let tile: Tile;
-
         if (opponent.lastDiscardTile) {
           tile = opponent.lastDiscardTile!;
           opponent.lastDiscardTile = null;

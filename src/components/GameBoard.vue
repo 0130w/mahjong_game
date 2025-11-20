@@ -47,37 +47,30 @@
       <div class="player-area player-bottom">
         <div class="player-section">
           <div class="player-with-controls">
-            <PlayerHand :player="gameStore.players[PlayerID.PLAYER_0]!" :isCurrentPlayer="isPlayerHandClickable"
-              :showHand="true" @tileClick="handleTileClick" />
+            <PlayerHand :player="humanPlayer" :isCurrentPlayer="isPlayerHandClickable" :showHand="true"
+              @tileClick="handleTileClick" />
           </div>
           <!-- 展示切牌按钮 -->
-          <div v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0" class="discard-button"
-            :class="{ disable: !selectedTile }" @click="handleDiscard">
+          <div v-if="isHumanTurn" class="discard-button" :class="{ disable: !selectedTile }" @click="handleDiscard">
             切牌
           </div>
           <!-- 展示碰按钮 -->
-          <div
-            v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canPon"
-            class="pon-button" @click="handlePon">
+          <div v-if="isHumanTurn && humanPlayer.playerState.canPon" class="pon-button" @click="handlePon">
             碰
           </div>
           <!-- 展示杠按钮 -->
-          <div
-            v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canKan"
-            class="kan-button" @click="handleKan">
+          <div v-if="isHumanTurn && humanPlayer.playerState.canKan" class="kan-button" @click="handleKan">
           </div>
           <!-- 展示暗杠按钮 -->
-          <div v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canAnKan
+          <div v-if="isHumanTurn && humanPlayer.playerState.canAnKan
           " class="ankan-button" @click="handleAnKan">
           </div>
           <!-- 展示荣和按钮 -->
-          <div
-            v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canRon"
-            class="ron-button" @click="handleRon"> </div>
+          <div v-if="isHumanTurn && humanPlayer.playerState.canRon" class="ron-button" @click="handleRon"> </div>
           <!-- 展示自摸按钮 -->
-          <div
-            v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canTsumo"
-            class="tsumo-button" @click="handleTsumo"> </div>
+          <div v-if="isHumanTurn && humanPlayer.playerState.canTsumo" class="tsumo-button" @click="handleTsumo"> </div>
+          <!-- 展示跳过按钮 -->
+          <div v-if="isHumanTurn && humanPlayer.hasReaction()" class="skip-button" @click="handleSkip"> </div>
         </div>
       </div>
     </div>
@@ -98,6 +91,10 @@ import { sortHand } from '../utils/tiles';
 
 const gameStore = useGameStore();
 const selectedTile = ref<Tile | null>(null);
+const humanPlayer = gameStore.players[PlayerID.PLAYER_0]!;
+const isHumanTurn = computed(() => {
+  return gameStore.currentPlayerIndex === PlayerID.PLAYER_0;
+});
 
 const handleTileClick = (tile: Tile) => {
   if (gameStore.currentPlayerIndex !== 0) return;
@@ -142,6 +139,10 @@ const handleRon = () => {
 const handleTsumo = () => {
   gameStore.players[gameStore.currentPlayerIndex]!.handleTsumo();
   gameStore.players[gameStore.currentPlayerIndex]!.emitAction('tsumo');
+}
+
+const handleSkip = () => {
+  gameStore.players[gameStore.currentPlayerIndex]!.emitAction('skip');
 }
 
 const isPlayerHandClickable = computed(() => {
@@ -339,7 +340,7 @@ const isPlayerHandClickable = computed(() => {
 }
 
 /* 对手舍牌区 - 反转z-index，让上面的行覆盖下面的行 */
-.opponent-discards .discard-tiles> * {
+.opponent-discards .discard-tiles>* {
   position: relative;
 }
 
@@ -459,11 +460,27 @@ const isPlayerHandClickable = computed(() => {
   background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
 }
 
+.skip-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #9e9e9e 0%, #616161 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
 /* 悬浮通用效果 */
 .pon-button:hover,
 .kan-button:hover,
 .ankan-button:hover,
 .ron-button:hover,
+.skip-button:hover,
 .tsumo-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
