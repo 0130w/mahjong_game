@@ -1,4 +1,4 @@
-import type { Tile, TileType } from '../utils/define';
+import type { Tile, TileType, Player } from '../utils/define';
 
 const TILE_DISPLAY: Record<TileType, string[]> = {
   man: ['一万', '二万', '三万', '四万', '五万', '六万', '七万', '八万', '九万'],
@@ -13,7 +13,7 @@ export function createFullWall(): Tile[] {
 
   // 每种牌4张
   const types: TileType[] = ['man', 'pin', 'sou'];
-  
+
   types.forEach(type => {
     const maxValue = 9;
     for (let value = 1; value <= maxValue; value++) {
@@ -44,20 +44,31 @@ export function shuffleWall(wall: Tile[]): Tile[] {
 }
 
 // 发牌逻辑，从牌山中取出count张牌
-// TODO: 初始情况下，连摸13张的逻辑需要更换
 export function dealTiles(wall: Tile[], count: number): { dealt: Tile[], remaining: Tile[] } {
   const dealt = wall.slice(0, count);
   const remaining = wall.slice(count);
   return { dealt, remaining };
 }
 
+// 手牌排序
 export function sortHand(hand: Tile[]): Tile[] {
-  const typeOrder: Record<TileType, number> = { man: 0, pin: 1, sou: 2};
-  
+  const typeOrder: Record<TileType, number> = { man: 0, pin: 1, sou: 2 };
+
   return [...hand].sort((a, b) => {
     if (a.type !== b.type) {
       return typeOrder[a.type] - typeOrder[b.type];
     }
     return a.value - b.value;
   });
+}
+
+export function discardSelectedTile(tile: Tile, player: Player) {
+  player.discards.push(tile);
+  player.hand = player.hand.filter(t => t.id !== tile.id);
+}
+
+export function getTile(player: Player, wall: Tile[]) {
+  const { dealt, remaining } = dealTiles(wall, 1);
+  player.hand = player.hand.concat(dealt);
+  wall = remaining;
 }

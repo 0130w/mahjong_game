@@ -6,7 +6,7 @@
         <OpponentMeldDisplay :melds="gameStore.players[PlayerID.PLAYER_1]!.melds" />
       </div>
 
-      <!-- 玩家2（对手）- 上方 -->
+      <!-- 玩家1 对家 - 上方 -->
       <div class="player-area player-top">
         <div class="player-section">
           <PlayerHand :player="gameStore.players[PlayerID.PLAYER_1]!"
@@ -50,6 +50,27 @@
             <PlayerHand :player="gameStore.players[PlayerID.PLAYER_0]!" :isCurrentPlayer="isPlayerHandClickable"
               :showHand="true" @tileClick="handleTileClick" />
           </div>
+          <!-- 展示切牌按钮 -->
+          <div v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0" class="discard-button"
+            :class="{ disable: !selectedTile }" @click="handleDiscard"> </div>
+          <!-- 展示碰按钮 -->
+          <div
+            v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canPon"
+            class="pon-button" @click="handlePon">
+          </div>
+          <!-- 展示杠按钮 -->>
+          <div
+            v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canKan"
+            class="kan-button" @click="handleKan">
+          </div>
+          <!-- 展示暗杠按钮 -->>
+          <div v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canAnKan
+          " class="ankan-button" @click="handleAnKan">
+          </div>
+          <!-- 展示荣和按钮 -->>
+          <div v-if="gameStore.players[PlayerID.PLAYER_0]?.playerState.canRon"> </div>
+          <!-- 展示自摸按钮 -->
+          <div v-if="gameStore.players[PlayerID.PLAYER_0]?.playerState.canTsumo"> </div>
         </div>
       </div>
     </div>
@@ -71,10 +92,26 @@ const gameStore = useGameStore();
 const selectedTile = ref<Tile>() || null;
 
 const handleTileClick = (tile: Tile) => {
-  // 正常打牌阶段 - 只有当前玩家才能打牌
   if (gameStore.currentPlayerIndex !== 0) return;
   selectedTile.value = tile;
 };
+
+const handleDiscard = () => {
+  if (!selectedTile.value) return;
+  gameStore.players[gameStore.currentPlayerIndex]!.handleDiscard(selectedTile.value);
+  selectedTile.value = undefined;
+}
+
+const handlePon = () => {
+}
+
+const handleKan = () => {
+  // gameStore.players[gameStore.currentPlayerIndex]!.handleKan();
+}
+
+const handleAnKan = () => {
+  gameStore.players[gameStore.currentPlayerIndex]!.handleAnKan();
+}
 
 const isPlayerHandClickable = computed(() => {
   return gameStore.currentPlayerIndex === 0

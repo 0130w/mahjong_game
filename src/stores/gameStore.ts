@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import type { Tile } from '../utils/define';
 import { Player, PlayerID } from '../utils/define';
-import { createFullWall, shuffleWall, dealTiles, sortHand } from '../utils/tiles';
+import { createFullWall, shuffleWall, dealTiles, sortHand, getTile } from '../utils/tiles';
 import { ref } from 'vue';
 import type { GamePhase } from '../utils/define';
 
@@ -13,13 +13,14 @@ export const useGameStore = defineStore('game', () => {
   const roundNumber = ref(1);
   const players = ref<Player[]>([])
 
-  // start new game, used in StartPage
+  // 开始新游戏 
   function startNewGame() {
     phase.value = 'playing';
     wall.value = shuffleWall(createFullWall());
     currentPlayerIndex.value = 0;
     roundNumber.value = 1;
     let player_0 = new Player(PlayerID.PLAYER_0, '我', []);
+    // TODO: 初始情况下，连摸13张的逻辑需要更换为轮流摸一张，摸13轮
     {
       const { dealt, remaining } = dealTiles(wall.value, 13);
       player_0.hand = sortHand(dealt);
@@ -38,19 +39,67 @@ export const useGameStore = defineStore('game', () => {
     ];
   }
 
+  function waitForPlayerAction(player: Player, timeoutMs: number) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+      }, timeoutMs);
+    });
+  }
+
+  function resetPlayersState() {
+    players.value.forEach(player => {
+      player.resetState();
+    });
+  }
+
+  async function playLogic() {
+    while (true) {
+      if (wall.value.length === 0) {
+        return gameSettlement();
+      }
+
+      const player = players.value[currentPlayerIndex.value]!;
+      const opponent = players.value[(currentPlayerIndex.value + 1) % players.value.length]!;
+
+      getTile(player, wall.value)
+      player.checkStateWithoutTile();
+
+      const action = await waitForPlayerAction(player, 20000);
+
+      switch (action) {
+        case 'discard':
+          ;
+        case 'pon':
+          ;
+        default:
+          break;
+      }
+
+      // TODO:
+      // opponent?.checkStateWithTile();
+
+      // switch player
+      currentPlayerIndex.value = (currentPlayerIndex.value + 1) % players.value.length;
+
+      resetPlayersState();
+    }
+  }
+
+  function startPlaying() {
+    const loop = () => {
+      requestAnimationFrame(loop);
+    };
+    playLogic();
+    requestAnimationFrame(loop);
+  }
+
+  function gameSettlement() {
+  }
+
   function nextRound() {
     // TODO: implement
   }
 
-  // call after startNewGame
-  function discardSelectedTile(tile: Tile) {
-    const player = players.value[currentPlayerIndex.value];
-    if (player == undefined) {
-      return;
-    }
-    player.discards.push(tile);
-    player.hand = player.hand.filter(t => t.id !== tile.id);
-  }
 
   return {
     phase,
@@ -59,6 +108,6 @@ export const useGameStore = defineStore('game', () => {
     roundNumber,
     players,
     startNewGame,
-    discardSelectedTile
+    startPlaying,
   }
 })

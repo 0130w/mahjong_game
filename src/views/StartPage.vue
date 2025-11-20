@@ -64,6 +64,7 @@ const getFloatStyle = () => {
 const startGame = () => {
   gameStore.startNewGame();
   router.push('/game');
+  gameStore.startPlaying();
 };
 </script>
 
