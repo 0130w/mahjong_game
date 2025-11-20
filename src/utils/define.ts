@@ -9,9 +9,10 @@ export interface Tile {
   display: string;  // 显示文本: 一万...
 }
 
-// 副露
+// 副露: 碰、杠、暗杠
 export interface Meld {
-  tiles: Tile[];
+  tile: Tile;
+  type: 'pon' | 'kan' | 'ankan';
 };
 
 // 定义游戏阶段
@@ -65,12 +66,17 @@ export class Player {
   // 摸牌后检查状态，只需检查
   // 杠、暗杠、自摸
   checkStateWithoutTile() {
+    this.playerState.canKan = this.melds.find(m => m.type === 'pon' && m.tile.value === this.lastGetTile?.value) !== undefined;
+    this.playerState.canAnKan = this.hand.filter(t => t.type === this.lastGetTile?.type && t.value === this.lastGetTile?.value).length == 3;
+    // TODO: check tsumo
   }
 
   // 对手打牌后检查状态，只需检查
   // 碰、杠、荣和
   checkStateWithTile(tile: Tile) {
-
+    this.playerState.canPon = this.hand.filter(t => t.type === tile.type && t.value === tile.value).length == 2;
+    this.playerState.canKan = this.hand.filter(t => t.type === tile.type && t.value === tile.value).length == 3;
+    // TODO: check ron
   }
 
   resetState() {
@@ -84,14 +90,26 @@ export class Player {
   }
 
   handlePon(tile: Tile) {
+    this.hand = this.hand.filter(t => t.type != tile.type || t.value != tile.value);
+    this.melds.push({ tile, type: 'pon' });
   }
 
   handleKan(tile: Tile) {
-
+    // 明杠有两种形式，一种是加杠，一种是直接杠
+    const flag = this.hand.filter(t => t.type === tile.type && t.value === tile.value).length == 3;
+    if (flag) {
+      // 直接杠
+      this.hand = this.hand.filter(t => t.type != tile.type || t.value != tile.value);
+    } else {
+      // 加杠
+      this.melds = this.melds.filter(m => m.tile.value != tile.value && m.type == 'pon');
+    }
+    this.melds.push({ tile, type: 'kan' });
   }
 
   handleAnKan() {
-
+    this.hand = this.hand.filter(t => t.type != this.lastGetTile?.type || t.value != this.lastGetTile?.value);
+    this.melds.push({ tile: this.lastGetTile!, type: 'ankan' });
   }
 
   handleRon(tile: Tile) {
