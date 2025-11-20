@@ -1,5 +1,3 @@
-import { dealTiles } from './tiles';
-
 // 麻将牌类型
 export type TileType = 'man' | 'pin' | 'sou'; // 万、筒、索
 
@@ -65,18 +63,20 @@ export class Player {
     this.actionListener = null;
   }
 
-  getTile(wall: Tile[]) {
-    const { dealt, remaining } = dealTiles(wall, 1);
-    this.hand.push(...dealt);
-    this.lastGetTile = dealt[0]!
-    wall = remaining;
+  getTile(tile: Tile) {
+    this.hand.push(tile);
+    this.lastGetTile = tile;
+  }
+
+  hasReaction() {
+    return this.playerState.canPon || this.playerState.canKan || this.playerState.canRon;
   }
 
   // 摸牌后检查状态，只需检查
   // 杠、暗杠、自摸
   checkStateWithoutTile() {
-    this.playerState.canKan = this.melds.find(m => m.type === 'pon' && m.tile.value === this.lastGetTile?.value) !== undefined;
-    this.playerState.canAnKan = this.hand.filter(t => t.type === this.lastGetTile?.type && t.value === this.lastGetTile?.value).length == 3;
+    this.playerState.canKan = this.melds.find(m => m.type === 'pon' && m.tile.value === this.lastGetTile?.value && m.tile.type === this.lastGetTile?.type) !== undefined;
+    this.playerState.canAnKan = this.hand.filter(t => t.type === this.lastGetTile?.type && t.value === this.lastGetTile?.value).length == 4;
     // TODO: check tsumo
   }
 
@@ -105,16 +105,18 @@ export class Player {
 
   handleKan(tile: Tile) {
     // 明杠有两种形式，一种是加杠，一种是直接杠
-    const flag = this.hand.filter(t => t.type === tile.type && t.value === tile.value).length == 3;
-    if (flag) {
+    const sameCount = this.hand.filter(t => t.type === tile.type && t.value === tile.value).length;
+    if (sameCount === 3) {
       // 直接杠
       this.hand = this.hand.filter(t => t.type != tile.type || t.value != tile.value);
+      this.melds.push({ tile, type: 'kan' });
     } else {
       // 加杠
-      const ponIndex = this.melds.findIndex(m => m.type === 'pon' && m.tile.value === tile.value);
+      const ponIndex = this.melds.findIndex(m => m.type === 'pon' && m.tile.value === tile.value && m.tile.type === tile.type);
       if (ponIndex >= 0) {
         this.melds[ponIndex]!.type = 'kan';
       }
+      this.hand = this.hand.filter(t => t.id !== tile.id)
     }
   }
 
@@ -124,9 +126,11 @@ export class Player {
   }
 
   handleRon(tile: Tile) {
+    // TODO: 结算
   }
 
   handleTsumo() {
+    // TODO: 结算
   }
 
   registerActionListener(listener: (action: string) => void) {

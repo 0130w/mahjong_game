@@ -94,6 +94,7 @@ import PlayerMeldDisplay from './PlayerMeldDisplay.vue';
 import OpponentMeldDisplay from './OpponentMeldDisplay.vue';
 import type { Tile } from '../utils/define';
 import { PlayerID } from '../utils/define';
+import { sortHand } from '../utils/tiles';
 
 const gameStore = useGameStore();
 const selectedTile = ref<Tile | null>(null);
@@ -105,8 +106,10 @@ const handleTileClick = (tile: Tile) => {
 
 const handleDiscard = () => {
   if (!selectedTile.value) return;
-  gameStore.players[gameStore.currentPlayerIndex]!.handleDiscard(selectedTile.value);
-  gameStore.players[gameStore.currentPlayerIndex]!.emitAction('discard');
+  const player = gameStore.players[gameStore.currentPlayerIndex]!;
+  player.handleDiscard(selectedTile.value);
+  player.hand = sortHand(player.hand);
+  player.emitAction('discard');
   selectedTile.value = null;
 }
 

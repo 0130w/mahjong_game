@@ -11,7 +11,8 @@ export const useGameStore = defineStore('game', () => {
   const wall = ref<Tile[]>([]);
   const currentPlayerIndex = ref(0);
   const roundNumber = ref(1);
-  const players = ref<Player[]>([])
+  const players = ref<Player[]>([]);
+  const discardOnly = ref<boolean>(false);
 
   // 开始新游戏 
   function startNewGame() {
@@ -59,26 +60,80 @@ export const useGameStore = defineStore('game', () => {
     });
   }
 
+  async function runTurn(player: Player, opponent: Player, shouldDraw: boolean) {
+    if (shouldDraw) {
+      if (wall.value.length === 0) {
+        gameSettlement();
+        return;
+      }
+      const { dealt, remaining } = dealTiles(wall.value, 1);
+      player.getTile(dealt[0]!);
+      wall.value = remaining;
+      player.checkStateWithoutTile();
+    }
+
+    const action = await waitForPlayerAction(player, 20000);
+
+    if (!action) {
+      // 超时逻辑：随机打牌
+      const idx = Math.floor(Math.random() * player.hand.length);
+      const tile = player.hand[idx]!;
+      player.handleDiscard(tile);
+      player.hand = sortHand(player.hand);
+      await doAction('discard', player, opponent);
+    } else {
+      await doAction(action, player, opponent);
+    }
+  }
+
   async function doAction(action: string | null, player: Player, opponent: Player) {
     resetPlayersState();
     switch (action) {
-      case 'discard':
+      case 'discard': {
         const discardTile = player.lastDiscardTile!;
         opponent.checkStateWithTile(discardTile);
+        if (!opponent.hasReaction()) {
+          currentPlayerIndex.value = opponent.id;
+          return;
+        }
+        currentPlayerIndex.value = opponent.id;
         const opAction = await waitForPlayerAction(opponent, 20000);
+
         return await doAction(opAction, opponent, player);
-      case 'pon':
+      }
+      case 'pon': {
+        const tile = opponent.lastDiscardTile!;
+        player.handlePon(tile);
+        opponent.lastDiscardTile = null;
+        opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
+        await runTurn(player, opponent, false);
+        return;
+      }
+      case 'kan': {
+        let tile: Tile;
+
+        if (opponent.lastDiscardTile) {
+          tile = opponent.lastDiscardTile!;
+          opponent.lastDiscardTile = null;
+          opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
+        } else {
+          tile = player.lastGetTile!;
+        }
+        player.handleKan(tile);
+        await runTurn(player, opponent, true);
+        return;
+      }
+      case 'ankan': {
         break;
-      case 'kan':
-        break;
-      case 'ankan':
-        break;
+      }
       case 'ron':
         break;
       case 'tsumo':
         break;
-      default:
+      default: {
+        currentPlayerIndex.value = opponent.id;
         break;
+      }
     }
   }
 
@@ -91,15 +146,11 @@ export const useGameStore = defineStore('game', () => {
       const player = players.value[currentPlayerIndex.value]!;
       const opponent = players.value[(currentPlayerIndex.value + 1) % players.value.length]!;
 
-      player.getTile(wall.value)
-      player.checkStateWithoutTile();
+      const shouldDraw = !discardOnly.value;
 
-      const action = await waitForPlayerAction(player, 20000);
+      discardOnly.value = false;
 
-      await doAction(action, player, opponent);
-
-      // switch player
-      currentPlayerIndex.value = (currentPlayerIndex.value + 1) % players.value.length;
+      await runTurn(player, opponent, shouldDraw);
     }
   }
 
