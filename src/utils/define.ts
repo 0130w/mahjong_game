@@ -48,6 +48,7 @@ export class Player {
   playerState: PlayerState;
   lastDiscardTile: Tile | null;
   lastGetTile: Tile | null;
+  actionListener: ((action: string) => void) | null;
 
   constructor(id: number, name: string, hand: Tile[]) {
     this.id = id;
@@ -58,6 +59,7 @@ export class Player {
     this.playerState = new PlayerState();
     this.lastDiscardTile = null;
     this.lastGetTile = null;
+    this.actionListener = null;
   }
 
   // 摸牌后检查状态，只需检查
@@ -78,6 +80,10 @@ export class Player {
   handleDiscard(tile: Tile) {
     this.discards.push(tile);
     this.hand = this.hand.filter(t => t.id !== tile.id);
+    this.lastDiscardTile = tile;
+  }
+
+  handlePon(tile: Tile) {
   }
 
   handleKan(tile: Tile) {
@@ -86,5 +92,22 @@ export class Player {
 
   handleAnKan() {
 
+  }
+
+  handleRon(tile: Tile) {
+  }
+
+  handleTsumo() {
+  }
+
+  registerActionListener(listener: (action: string) => void) {
+    this.actionListener = listener;
+    return () => { this.actionListener = null; }
+  }
+
+  emitAction(action: string) {
+    if (this.actionListener) {
+      this.actionListener(action);
+    }
   }
 };

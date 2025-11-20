@@ -1,4 +1,4 @@
-import type { Tile } from '../types/mahjong';
+import type { Tile } from '../utils/define';
 
 /**
  * 根据麻将牌获取对应的图片路径

@@ -39,9 +39,16 @@ export const useGameStore = defineStore('game', () => {
     ];
   }
 
-  function waitForPlayerAction(player: Player, timeoutMs: number) {
-    return new Promise((resolve) => {
+  function waitForPlayerAction(player: Player, timeoutMs: number): Promise<string | null> {
+    return new Promise((resolve, _) => {
+      const off = player.registerActionListener((action) => {
+        off();
+        resolve(action);
+      });
+
       setTimeout(() => {
+        off();
+        resolve(null);
       }, timeoutMs);
     });
   }
@@ -50,6 +57,28 @@ export const useGameStore = defineStore('game', () => {
     players.value.forEach(player => {
       player.resetState();
     });
+  }
+
+  async function doAction(action: string | null, player: Player, opponent: Player) {
+    resetPlayersState();
+    switch (action) {
+      case 'discard':
+        opponent.checkStateWithTile(player.lastGetTile!);
+        doAction(await waitForPlayerAction(opponent, 20000), opponent, player);
+        break;
+      case 'pon':
+        break;
+      case 'kan':
+        break;
+      case 'ankan':
+        break;
+      case 'ron':
+        break;
+      case 'tsumo':
+        break;
+      default:
+        break;
+    }
   }
 
   async function playLogic() {
@@ -66,22 +95,10 @@ export const useGameStore = defineStore('game', () => {
 
       const action = await waitForPlayerAction(player, 20000);
 
-      switch (action) {
-        case 'discard':
-          ;
-        case 'pon':
-          ;
-        default:
-          break;
-      }
-
-      // TODO:
-      // opponent?.checkStateWithTile();
+      await doAction(action, player, opponent);
 
       // switch player
       currentPlayerIndex.value = (currentPlayerIndex.value + 1) % players.value.length;
-
-      resetPlayersState();
     }
   }
 

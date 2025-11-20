@@ -52,25 +52,30 @@
           </div>
           <!-- 展示切牌按钮 -->
           <div v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0" class="discard-button"
-            :class="{ disable: !selectedTile }" @click="handleDiscard"> </div>
+            :class="{ disable: !selectedTile }" @click="handleDiscard">
+          </div>
           <!-- 展示碰按钮 -->
           <div
             v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canPon"
             class="pon-button" @click="handlePon">
           </div>
-          <!-- 展示杠按钮 -->>
+          <!-- 展示杠按钮 -->
           <div
             v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canKan"
             class="kan-button" @click="handleKan">
           </div>
-          <!-- 展示暗杠按钮 -->>
+          <!-- 展示暗杠按钮 -->
           <div v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canAnKan
           " class="ankan-button" @click="handleAnKan">
           </div>
-          <!-- 展示荣和按钮 -->>
-          <div v-if="gameStore.players[PlayerID.PLAYER_0]?.playerState.canRon"> </div>
+          <!-- 展示荣和按钮 -->
+          <div
+            v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canRon"
+            class="ron-button" @click="handleRon"> </div>
           <!-- 展示自摸按钮 -->
-          <div v-if="gameStore.players[PlayerID.PLAYER_0]?.playerState.canTsumo"> </div>
+          <div
+            v-if="gameStore.currentPlayerIndex === PlayerID.PLAYER_0 && gameStore.players[PlayerID.PLAYER_0]?.playerState.canTsumo"
+            class="tsumo-button" @click="handleTsumo"> </div>
         </div>
       </div>
     </div>
@@ -99,22 +104,38 @@ const handleTileClick = (tile: Tile) => {
 const handleDiscard = () => {
   if (!selectedTile.value) return;
   gameStore.players[gameStore.currentPlayerIndex]!.handleDiscard(selectedTile.value);
+  gameStore.players[gameStore.currentPlayerIndex]!.emitAction('discard');
   selectedTile.value = undefined;
 }
 
 const handlePon = () => {
+  gameStore.players[gameStore.currentPlayerIndex]!.handlePon(
+    gameStore.players[gameStore.currentPlayerIndex]!.lastDiscardTile!
+  );
 }
 
 const handleKan = () => {
-  // gameStore.players[gameStore.currentPlayerIndex]!.handleKan();
+  gameStore.players[gameStore.currentPlayerIndex]!.handleKan(
+    gameStore.players[gameStore.currentPlayerIndex]!.lastDiscardTile!
+  );
 }
 
 const handleAnKan = () => {
   gameStore.players[gameStore.currentPlayerIndex]!.handleAnKan();
 }
 
+const handleRon = () => {
+  gameStore.players[gameStore.currentPlayerIndex]!.handleRon(
+    gameStore.players[gameStore.currentPlayerIndex]!.lastDiscardTile!
+  );
+}
+
+const handleTsumo = () => {
+  gameStore.players[gameStore.currentPlayerIndex]!.handleTsumo();
+}
+
 const isPlayerHandClickable = computed(() => {
-  return gameStore.currentPlayerIndex === 0
+  return gameStore.currentPlayerIndex === PlayerID.PLAYER_0
 });
 
 </script>
