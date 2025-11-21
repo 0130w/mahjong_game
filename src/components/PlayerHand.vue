@@ -8,7 +8,7 @@
           :isLastGetTile="props.lastGetTile?.id === tile.id" @click="handleTileClick(tile)" />
       </div>
       <div class="hand-tiles-hidden" v-else>
-        <div v-for="(, index) in player.hand" :key="`hidden-${index}`" class="tile-back">
+        <div v-for="(,index) in player.hand" :key="`hidden-${index}`" class="tile-back">
           <div class="tile-back-pattern"></div>
         </div>
       </div>

@@ -120,7 +120,6 @@ import PlayerMeldDisplay from './PlayerMeldDisplay.vue';
 import OpponentMeldDisplay from './OpponentMeldDisplay.vue';
 import type { Tile } from '../utils/define';
 import { PlayerID } from '../utils/define';
-import { sortHand } from '../utils/tiles';
 
 const gameStore = useGameStore();
 const selectedTile = ref<Tile | null>(null);
