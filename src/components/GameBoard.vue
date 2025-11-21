@@ -47,7 +47,7 @@
       <div class="player-area player-bottom">
         <div class="player-section">
           <div class="player-with-controls">
-            <PlayerHand :player="humanPlayer" :isCurrentPlayer="isPlayerHandClickable" :showHand="true"
+            <PlayerHand :player="humanPlayer" :isCurrentPlayer="isHumanTurn" :showHand="true"
               @tileClick="handleTileClick" />
           </div>
           <!-- 展示切牌按钮 -->
@@ -95,6 +95,9 @@ const humanPlayer = gameStore.players[PlayerID.PLAYER_0]!;
 const isHumanTurn = computed(() => {
   return gameStore.currentPlayerIndex === PlayerID.PLAYER_0;
 });
+const currentPlayer = computed(() => {
+  return gameStore.players[gameStore.currentPlayerIndex]!;
+});
 
 const handleTileClick = (tile: Tile) => {
   if (gameStore.currentPlayerIndex !== 0) return;
@@ -103,52 +106,42 @@ const handleTileClick = (tile: Tile) => {
 
 const handleDiscard = () => {
   if (!selectedTile.value) return;
-  const player = gameStore.players[gameStore.currentPlayerIndex]!;
-  player.handleDiscard(selectedTile.value);
-  player.hand = sortHand(player.hand);
-  player.emitAction('discard');
+  currentPlayer.value.handleDiscard(selectedTile.value);
+  currentPlayer.value.hand = sortHand(currentPlayer.value.hand);
+  currentPlayer.value.emitAction('discard');
   selectedTile.value = null;
 }
 
 const handlePon = () => {
-  gameStore.players[gameStore.currentPlayerIndex]!.handlePon(
-    gameStore.players[gameStore.currentPlayerIndex]!.lastDiscardTile!
+  currentPlayer.value.handlePon(
+    currentPlayer.value.lastDiscardTile!
   );
-  gameStore.players[gameStore.currentPlayerIndex]!.emitAction('pon');
+  currentPlayer.value.emitAction('pon');
 }
 
 const handleKan = () => {
-  gameStore.players[gameStore.currentPlayerIndex]!.handleKan(
-    gameStore.players[gameStore.currentPlayerIndex]!.lastDiscardTile!
+  currentPlayer.value.handleKan(
+    currentPlayer.value.lastDiscardTile!
   );
-  gameStore.players[gameStore.currentPlayerIndex]!.emitAction('kan');
+  currentPlayer.value.emitAction('kan');
 }
 
 const handleAnKan = () => {
-  gameStore.players[gameStore.currentPlayerIndex]!.handleAnKan();
-  gameStore.players[gameStore.currentPlayerIndex]!.emitAction('ankan');
+  currentPlayer.value.handleAnKan();
+  currentPlayer.value.emitAction('ankan');
 }
 
 const handleRon = () => {
-  gameStore.players[gameStore.currentPlayerIndex]!.handleRon(
-    gameStore.players[gameStore.currentPlayerIndex]!.lastDiscardTile!
-  );
-  gameStore.players[gameStore.currentPlayerIndex]!.emitAction('ron');
+  currentPlayer.value.emitAction('ron');
 }
 
 const handleTsumo = () => {
-  gameStore.players[gameStore.currentPlayerIndex]!.handleTsumo();
-  gameStore.players[gameStore.currentPlayerIndex]!.emitAction('tsumo');
+  currentPlayer.value.emitAction('tsumo');
 }
 
 const handleSkip = () => {
-  gameStore.players[gameStore.currentPlayerIndex]!.emitAction('skip');
+  currentPlayer.value.emitAction('skip');
 }
-
-const isPlayerHandClickable = computed(() => {
-  return gameStore.currentPlayerIndex === PlayerID.PLAYER_0
-});
-
 </script>
 
 <style scoped>

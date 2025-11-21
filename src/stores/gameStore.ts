@@ -148,6 +148,9 @@ export const useGameStore = defineStore('game', () => {
         break;
       case 'tsumo':
         break;
+      // 流局
+      case 'ryuukyoku':
+        break;
       default: {
         currentPlayerIndex.value = opponent.id;
         break;
@@ -163,11 +166,8 @@ export const useGameStore = defineStore('game', () => {
 
       const player = players.value[currentPlayerIndex.value]!;
       const opponent = players.value[(currentPlayerIndex.value + 1) % players.value.length]!;
-
       const shouldDraw = !discardOnly.value;
-
       discardOnly.value = false;
-
       await runTurn(player, opponent, shouldDraw);
     }
   }
@@ -186,7 +186,6 @@ export const useGameStore = defineStore('game', () => {
   function nextRound() {
     // TODO: implement
   }
-
 
   return {
     phase,
