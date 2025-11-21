@@ -8,7 +8,6 @@ export interface Tile {
   id: string;       // type-value-copy-id
   type: TileType;
   value: number;    // 1-9 for man/pin/sou
-  display: string;  // 显示文本: 一万...
 }
 
 // 副露: 碰、杠、暗杠

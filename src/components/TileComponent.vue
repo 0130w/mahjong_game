@@ -1,7 +1,7 @@
 <template>
   <div class="tile" :class="{ 'selected': isSelected, 'clickable': clickable }" @click="handleClick">
     <div class="tile-face">
-      <img :src="tileImagePath" :alt="tile.display" class="tile-image" />
+      <img :src="tileImagePath" class="tile-image" />
     </div>
   </div>
 </template>

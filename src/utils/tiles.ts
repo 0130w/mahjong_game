@@ -1,11 +1,5 @@
 import type { Tile, TileType } from '../utils/define';
 
-const TILE_DISPLAY: Record<TileType, string[]> = {
-  man: ['一万', '二万', '三万', '四万', '五万', '六万', '七万', '八万', '九万'],
-  pin: ['一筒', '二筒', '三筒', '四筒', '五筒', '六筒', '七筒', '八筒', '九筒'],
-  sou: ['一索', '二索', '三索', '四索', '五索', '六索', '七索', '八索', '九索'],
-};
-
 // 创建牌山
 export function createFullWall(): Tile[] {
   const wall: Tile[] = [];
@@ -22,7 +16,6 @@ export function createFullWall(): Tile[] {
           id: `${type}-${value}-${copy}-${idCounter++}`,
           type,
           value,
-          display: TILE_DISPLAY[type]![value - 1]!
         });
       }
     }

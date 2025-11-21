@@ -5,7 +5,6 @@
       <img 
         v-if="useImage && !imageError"
         :src="tileImagePath" 
-        :alt="tile.display"
         class="tile-image"
         @error="handleImageError"
       />

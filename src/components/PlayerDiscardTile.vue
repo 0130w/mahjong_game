@@ -2,7 +2,7 @@
   <div class="player-discard-tile">
     <div class="player-discard-tile-face">
       <!-- 图片模式 -->
-      <img v-if="useImage && !imageError" :src="tileImagePath" :alt="tile.display" class="tile-image"
+      <img v-if="useImage && !imageError" :src="tileImagePath" class="tile-image"
         @error="handleImageError" />
     </div>
   </div>
