@@ -9,14 +9,6 @@
         class="tile-image"
         @error="handleImageError"
       />
-      <!-- 文字降级模式 -->
-      <span 
-        v-else
-        class="opponent-discard-tile-icon" 
-        :class="getTileColorClass(tile)"
-      >
-        {{ getTileIcon(tile) }}
-      </span>
     </div>
   </div>
 </template>
@@ -43,24 +35,6 @@ const tileImagePath = computed(() => getTileImagePath(props.tile));
 // 图片加载失败时的处理
 const handleImageError = () => {
   imageError.value = true;
-};
-
-// 将麻将牌转换为显示文字（降级方案）
-const getTileIcon = (tile: Tile): string => {
-  return tile.display;
-};
-
-// 根据牌的类型返回颜色类名（降级方案）
-const getTileColorClass = (tile: Tile): string => {
-  if (tile.type === 'man') return 'tile-man';
-  if (tile.type === 'pin') return 'tile-pin';
-  if (tile.type === 'sou') return 'tile-sou';
-  if (tile.type === 'honor') {
-    if (tile.value === 7) return 'tile-honor-red';
-    if (tile.value === 6) return 'tile-honor-green';
-    return 'tile-honor';
-  }
-  return '';
 };
 </script>
 
@@ -126,20 +100,4 @@ const getTileColorClass = (tile: Tile): string => {
   pointer-events: none;
   transform: rotateX(180deg);
 }
-
-/* 字体样式（降级方案） */
-.opponent-discard-tile-icon {
-  font-size: 18px;
-  font-weight: bold;
-  line-height: 1;
-  font-family: 'Microsoft YaHei', 'PingFang SC', 'SimHei', sans-serif;
-}
-
-/* 颜色定义 */
-.tile-man { color: #1976d2; }
-.tile-pin { color: #d32f2f; }
-.tile-sou { color: #388e3c; }
-.tile-honor { color: #212121; }
-.tile-honor-red { color: #d32f2f; }
-.tile-honor-green { color: #388e3c; }
 </style>

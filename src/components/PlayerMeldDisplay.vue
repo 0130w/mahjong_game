@@ -2,7 +2,9 @@
   <div v-if="melds.length > 0" class="player-meld-display">
     <div v-for="(meld, index) in melds" :key="index" class="meld-group">
       <div class="meld-tiles">
-        <PlayerDiscardTile v-for="tile in meld.tiles" :key="tile.id" :tile="tile" />
+        <!-- 这里的id和tileID不一致，仅为了展示，对实际逻辑不影响 -->
+        <PlayerDiscardTile v-for="n in (meld.type === 'kan' || meld.type === 'ankan' ? 4 : 3)"
+          :key="`${meld.tile.id}-${n}`" :tile="{ ...meld.tile, id: `${meld.tile.id}-${n}` }" />
       </div>
     </div>
   </div>

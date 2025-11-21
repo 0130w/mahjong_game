@@ -266,23 +266,24 @@ const handleNextRound = () => {
   z-index: 0;
 }
 
-/* 副露区域 - 独立定位 */
 .meld-area {
   position: absolute;
   z-index: 15;
-  top: 50%;
-  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
 .meld-area-opponent {
   left: 20px;
+  top: 50%;
+  transform: translateX(-50%) rotate(180deg);
 }
 
 .meld-area-self {
   right: 20px;
   bottom: 140px;
-  top: auto;
-  transform: none;
 }
 
 .player-area {
