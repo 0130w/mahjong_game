@@ -139,34 +139,32 @@ const handleTileClick = (tile: Tile) => {
 
 const handleDiscard = () => {
   if (!selectedTile.value) return;
-  currentPlayer.value.handleDiscard(selectedTile.value);
-  currentPlayer.value.hand = sortHand(currentPlayer.value.hand);
-  currentPlayer.value.emitAction('discard');
+  currentPlayer.value.emitAction({ type: 'discard', tile: selectedTile.value });
   selectedTile.value = null;
 }
 
 const handlePon = () => {
-  currentPlayer.value.emitAction('pon');
+  currentPlayer.value.emitAction({ type: 'pon' });
 }
 
 const handleKan = () => {
-  currentPlayer.value.emitAction('kan');
+  currentPlayer.value.emitAction({ type: 'kan' });
 }
 
 const handleAnKan = () => {
-  currentPlayer.value.emitAction('ankan');
+  currentPlayer.value.emitAction({ type: 'ankan' });
 }
 
 const handleRon = () => {
-  currentPlayer.value.emitAction('ron');
+  currentPlayer.value.emitAction({ type: 'ron' });
 }
 
 const handleTsumo = () => {
-  currentPlayer.value.emitAction('tsumo');
+  currentPlayer.value.emitAction({ type: 'tsumo' });
 }
 
 const handleSkip = () => {
-  currentPlayer.value.emitAction('skip');
+  currentPlayer.value.emitAction({ type: 'skip' });
 }
 
 const winnerName = computed(() => {

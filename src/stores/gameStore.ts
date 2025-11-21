@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { Tile } from '../utils/define';
+import type { PlayerAction, Tile } from '../utils/define';
 import { Player, PlayerID } from '../utils/define';
 import { createFullWall, shuffleWall, dealTiles, sortHand } from '../utils/tiles';
 import { ref } from 'vue';
@@ -43,7 +43,7 @@ export const useGameStore = defineStore('game', () => {
     startPlaying();
   }
 
-  function waitForPlayerAction(player: Player, timeoutMs: number): Promise<string | null> {
+  function waitForPlayerAction(player: Player, timeoutMs: number): Promise<PlayerAction | null> {
     return new Promise((resolve, _) => {
       const off = player.registerActionListener((action) => {
         off();
@@ -66,7 +66,7 @@ export const useGameStore = defineStore('game', () => {
   async function runTurn(player: Player, opponent: Player, shouldDraw: boolean) {
     if (shouldDraw) {
       if (wall.value.length === 0) {
-        await doAction('ryuukyoku', player, opponent);
+        await doAction({ type: 'ryuukyoku' }, player, opponent);
         return;
       }
       const { dealt, remaining } = dealTiles(wall.value, 1);
@@ -77,10 +77,8 @@ export const useGameStore = defineStore('game', () => {
 
     if (isAIPlayer(player)) {
       const idx = Math.floor(Math.random() * player.hand.length);
-      const title = player.hand[idx]!;
-      player.handleDiscard(title);
-      player.hand = sortHand(player.hand);
-      await doAction('discard', player, opponent);
+      const tile = player.hand[idx]!;
+      await doAction({ type: 'discard', tile: tile }, player, opponent);
       return;
     }
 
@@ -90,22 +88,24 @@ export const useGameStore = defineStore('game', () => {
       // 超时逻辑：随机打牌
       const idx = Math.floor(Math.random() * player.hand.length);
       const tile = player.hand[idx]!;
-      player.handleDiscard(tile);
-      player.hand = sortHand(player.hand);
-      await doAction('discard', player, opponent);
+      await doAction({ type: 'discard', tile: tile }, player, opponent);
     } else {
       await doAction(action, player, opponent);
     }
   }
 
-  async function doAction(action: string | null, player: Player, opponent: Player) {
+  async function doAction(action: PlayerAction | null, player: Player, opponent: Player) {
     resetPlayersState();
-    switch (action) {
+    switch (action?.type) {
       case 'skip': {
         currentPlayerIndex.value = player.id;
         return;
       }
       case 'discard': {
+        const tile = action.tile;
+        player.handleDiscard(tile);
+        player.hand = sortHand(player.hand);
+
         const discardTile = player.lastDiscardTile!;
         opponent.checkStateWithTile(discardTile);
         if (!opponent.hasReaction()) {
@@ -116,7 +116,7 @@ export const useGameStore = defineStore('game', () => {
 
         if (isAIPlayer(opponent)) {
           // TODO: 优化成真正的AI逻辑
-          return await doAction('skip', opponent, player);
+          return await doAction({ type: 'skip' }, opponent, player);
         } else {
           const opAction = await waitForPlayerAction(opponent, 20000);
           return await doAction(opAction, opponent, player);
@@ -174,7 +174,7 @@ export const useGameStore = defineStore('game', () => {
       const player = players.value[currentPlayerIndex.value]!;
       const opponent = players.value[(currentPlayerIndex.value + 1) % players.value.length]!;
       if (wall.value.length === 0) {
-        await doAction('ryuukyoku', player, opponent);
+        await doAction({ type: 'ryuukyoku' }, player, opponent);
         continue;
       }
       const shouldDraw = !discardOnly.value;

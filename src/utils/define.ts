@@ -15,6 +15,16 @@ export interface Meld {
   type: 'pon' | 'kan' | 'ankan';
 };
 
+export type PlayerAction = 
+  | { type: 'discard', tile: Tile }
+  | { type: 'pon' }
+  | { type: 'kan' }
+  | { type: 'ankan' }
+  | { type: 'ron' }
+  | { type: 'tsumo' }
+  | { type: 'skip' }
+  | { type: 'ryuukyoku' };
+
 // 定义游戏阶段
 export type GamePhase = 'initial' | 'playing' | 'finished';
 
@@ -58,7 +68,7 @@ export class Player {
   playerState: PlayerState;
   lastDiscardTile: Tile | null;
   lastGetTile: Tile | null;
-  actionListener: ((action: string) => void) | null;
+  actionListener: ((action: PlayerAction) => void) | null;
 
   constructor(id: number, name: string, hand: Tile[]) {
     this.id = id;
@@ -134,12 +144,12 @@ export class Player {
     this.melds.push({ tile: this.lastGetTile!, type: 'ankan' });
   }
 
-  registerActionListener(listener: (action: string) => void) {
+  registerActionListener(listener: (action: PlayerAction) => void) {
     this.actionListener = listener;
     return () => { this.actionListener = null; }
   }
 
-  emitAction(action: string) {
+  emitAction(action: PlayerAction) {
     if (this.actionListener) {
       this.actionListener(action);
     }
