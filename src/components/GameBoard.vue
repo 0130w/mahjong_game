@@ -60,17 +60,25 @@
           </div>
           <!-- 展示杠按钮 -->
           <div v-if="isHumanTurn && humanPlayer.playerState.canKan" class="kan-button" @click="handleKan">
+            杠
           </div>
           <!-- 展示暗杠按钮 -->
           <div v-if="isHumanTurn && humanPlayer.playerState.canAnKan
           " class="ankan-button" @click="handleAnKan">
+          暗杠
           </div>
           <!-- 展示荣和按钮 -->
-          <div v-if="isHumanTurn && humanPlayer.playerState.canRon" class="ron-button" @click="handleRon"> </div>
+          <div v-if="isHumanTurn && humanPlayer.playerState.canRon" class="ron-button" @click="handleRon">
+            和
+          </div>
           <!-- 展示自摸按钮 -->
-          <div v-if="isHumanTurn && humanPlayer.playerState.canTsumo" class="tsumo-button" @click="handleTsumo"> </div>
+          <div v-if="isHumanTurn && humanPlayer.playerState.canTsumo" class="tsumo-button" @click="handleTsumo">
+            自摸
+          </div>
           <!-- 展示跳过按钮 -->
-          <div v-if="isHumanTurn && humanPlayer.hasReaction()" class="skip-button" @click="handleSkip"> </div>
+          <div v-if="isHumanTurn && humanPlayer.hasReaction()" class="skip-button" @click="handleSkip">
+            跳过
+          </div>
         </div>
       </div>
       <!-- 局结算弹窗 -->
@@ -116,7 +124,7 @@ import { sortHand } from '../utils/tiles';
 
 const gameStore = useGameStore();
 const selectedTile = ref<Tile | null>(null);
-const humanPlayer = gameStore.players[PlayerID.PLAYER_0]!;
+const humanPlayer = computed(() => gameStore.players[PlayerID.PLAYER_0]!);
 const isHumanTurn = computed(() => {
   return gameStore.currentPlayerIndex === PlayerID.PLAYER_0;
 });
@@ -138,21 +146,14 @@ const handleDiscard = () => {
 }
 
 const handlePon = () => {
-  currentPlayer.value.handlePon(
-    currentPlayer.value.lastDiscardTile!
-  );
   currentPlayer.value.emitAction('pon');
 }
 
 const handleKan = () => {
-  currentPlayer.value.handleKan(
-    currentPlayer.value.lastDiscardTile!
-  );
   currentPlayer.value.emitAction('kan');
 }
 
 const handleAnKan = () => {
-  currentPlayer.value.handleAnKan();
   currentPlayer.value.emitAction('ankan');
 }
 
@@ -278,7 +279,7 @@ const handleNextRound = () => {
 .meld-area-opponent {
   left: 20px;
   top: 50%;
-  transform: translateX(-50%) rotate(180deg);
+  transform: translateY(-50%) rotate(180deg);
 }
 
 .meld-area-self {
