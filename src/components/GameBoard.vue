@@ -27,6 +27,14 @@
             </div>
 
             <div class="table-center">
+              <GameInfoPanel :roundNumber="gameStore.roundNumber"
+              :wallCount="gameStore.wall.length"
+              :playerName="humanPlayer.name"
+              :playerScore="0"
+              :opponentName="gameStore.players[PlayerID.PLAYER_1]!.name"
+              :opponentScore="0"
+              playerWind="東"
+              opponentWind="南" />
             </div>
 
             <div class="discard-section player-discards">
@@ -123,6 +131,7 @@ import PlayerMeldDisplay from './PlayerMeldDisplay.vue';
 import OpponentMeldDisplay from './OpponentMeldDisplay.vue';
 import type { Tile } from '../utils/define';
 import { PlayerID } from '../utils/define';
+import GameInfoPanel from './GameInfoPanel.vue';
 
 const gameStore = useGameStore();
 const selectedTile = ref<Tile | null>(null);
@@ -380,6 +389,10 @@ const handleNextRound = () => {
   order: 2;
   flex-shrink: 0;
   z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
 }
 
 @keyframes pulse-glow {
