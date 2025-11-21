@@ -3,7 +3,7 @@ import type { Tile } from '../utils/define';
 import { Player, PlayerID } from '../utils/define';
 import { createFullWall, shuffleWall, dealTiles, sortHand } from '../utils/tiles';
 import { ref } from 'vue';
-import type { GamePhase } from '../utils/define';
+import type { GamePhase, RoundResult } from '../utils/define';
 
 export const useGameStore = defineStore('game', () => {
 
@@ -14,13 +14,11 @@ export const useGameStore = defineStore('game', () => {
   const players = ref<Player[]>([]);
   const discardOnly = ref<boolean>(false);
   const isAIPlayer = (player: Player) => player.id !== PlayerID.PLAYER_0;
+  const lastRoundResult = ref<RoundResult | null>(null);
 
-  // 开始新游戏 
-  function startNewGame() {
-    phase.value = 'playing';
+  function initRound() {
     wall.value = shuffleWall(createFullWall());
     currentPlayerIndex.value = 0;
-    roundNumber.value = 1;
     let player_0 = new Player(PlayerID.PLAYER_0, '我', []);
     // TODO: 初始情况下，连摸13张的逻辑需要更换为轮流摸一张，摸13轮
     {
@@ -34,11 +32,15 @@ export const useGameStore = defineStore('game', () => {
       player_1.hand = sortHand(dealt);
       wall.value = remaining;
     }
-
     players.value = [
       player_0,
       player_1
     ];
+  }
+
+  function startNewGame() {
+    initRound();
+    startPlaying();
   }
 
   function waitForPlayerAction(player: Player, timeoutMs: number): Promise<string | null> {
@@ -64,7 +66,7 @@ export const useGameStore = defineStore('game', () => {
   async function runTurn(player: Player, opponent: Player, shouldDraw: boolean) {
     if (shouldDraw) {
       if (wall.value.length === 0) {
-        gameSettlement();
+        await doAction('ryuukyoku', player, opponent);
         return;
       }
       const { dealt, remaining } = dealTiles(wall.value, 1);
@@ -142,30 +144,37 @@ export const useGameStore = defineStore('game', () => {
         return;
       }
       case 'ankan': {
-        break;
+        return;
       }
-      case 'ron':
-        break;
-      case 'tsumo':
-        break;
-      // 流局
-      case 'ryuukyoku':
-        break;
+      case 'ron': {
+        gameSettlement({ endType: 'ron', winnerId: player.id, loserId: opponent.id, han: 0 });
+        return;
+      }
+      case 'tsumo': {
+        gameSettlement({ endType: 'tsumo', winnerId: player.id, han: 0 });
+        return;
+      }
+      case 'ryuukyoku': {
+        gameSettlement({ endType: 'ryuukyoku' });
+        return;
+      }
       default: {
         currentPlayerIndex.value = opponent.id;
-        break;
+        return;
       }
     }
   }
 
   async function playLogic() {
-    while (true) {
-      if (wall.value.length === 0) {
-        return gameSettlement();
-      }
+    phase.value = 'playing';
 
+    while (phase.value == 'playing') {
       const player = players.value[currentPlayerIndex.value]!;
       const opponent = players.value[(currentPlayerIndex.value + 1) % players.value.length]!;
+      if (wall.value.length === 0) {
+        await doAction('ryuukyoku', player, opponent);
+        continue;
+      }
       const shouldDraw = !discardOnly.value;
       discardOnly.value = false;
       await runTurn(player, opponent, shouldDraw);
@@ -180,11 +189,17 @@ export const useGameStore = defineStore('game', () => {
     requestAnimationFrame(loop);
   }
 
-  function gameSettlement() {
+  function gameSettlement(result: RoundResult) {
+    lastRoundResult.value = result;
+    phase.value = 'finished';
   }
 
   function nextRound() {
-    // TODO: implement
+    roundNumber.value += 1;
+    lastRoundResult.value = null;
+    phase.value = 'initial';
+    initRound();
+    startPlaying();
   }
 
   return {
@@ -194,6 +209,7 @@ export const useGameStore = defineStore('game', () => {
     roundNumber,
     players,
     startNewGame,
-    startPlaying,
+    lastRoundResult,
+    nextRound
   }
 })

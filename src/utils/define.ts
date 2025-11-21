@@ -40,6 +40,15 @@ export const PlayerID = {
   PLAYER_1: 1  // 对家
 }
 
+type RoundEndType = 'ron' | 'tsumo' | 'ryuukyoku';
+
+export interface RoundResult {
+  endType: RoundEndType;
+  winnerId?: number;
+  loserId?: number;
+  han?: number;
+};
+
 export class Player {
   id: number;
   name: string;
@@ -123,14 +132,6 @@ export class Player {
   handleAnKan() {
     this.hand = this.hand.filter(t => t.type != this.lastGetTile?.type || t.value != this.lastGetTile?.value);
     this.melds.push({ tile: this.lastGetTile!, type: 'ankan' });
-  }
-
-  handleRon(tile: Tile) {
-    // TODO: 结算
-  }
-
-  handleTsumo() {
-    // TODO: 结算
   }
 
   registerActionListener(listener: (action: string) => void) {
