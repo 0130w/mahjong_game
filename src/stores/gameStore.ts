@@ -4,6 +4,7 @@ import { Player, PlayerID } from '../utils/define';
 import { createFullWall, shuffleWall, dealTiles, sortHand } from '../utils/tiles';
 import { ref } from 'vue';
 import type { GamePhase, RoundResult } from '../utils/define';
+import { calcFan } from '../utils/hupai';
 
 export const useGameStore = defineStore('game', () => {
 
@@ -149,11 +150,13 @@ export const useGameStore = defineStore('game', () => {
         return;
       }
       case 'ron': {
-        gameSettlement({ endType: 'ron', winnerId: player.id, loserId: opponent.id, han: 0 });
+        const { fan } = calcFan(player.hand, player.melds);
+        gameSettlement({ endType: 'ron', winnerId: player.id, loserId: opponent.id, han: fan });
         return;
       }
       case 'tsumo': {
-        gameSettlement({ endType: 'tsumo', winnerId: player.id, han: 0 });
+        const { fan } = calcFan(player.hand, player.melds);
+        gameSettlement({ endType: 'tsumo', winnerId: player.id, han: fan });
         return;
       }
       case 'ryuukyoku': {

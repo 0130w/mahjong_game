@@ -13,7 +13,7 @@ function checkQiDui(hand: Tile[]) : boolean {
 }
 
 // 将手牌和副露组合用来判胡，副露为杠只影响番数，可视为碰来判胡
-function buildTilesForShape(hand: Tile[], melds: Meld[]) : Tile[]
+function buildAllTiles(hand: Tile[], melds: Meld[]) : Tile[]
 {
     const tiles : Tile[] = [...hand];
     for (const m of melds) {
@@ -101,10 +101,91 @@ export function canHu(tiles: Tile[], melds: Meld[]) : boolean {
     if (checkQiDui(tiles)) {
         return true;
     }
-    const allTiles = buildTilesForShape(tiles, melds);
+    const allTiles = buildAllTiles(tiles, melds);
     if (!isQueYiMen(allTiles)) {
         return false;
     }
     // k个面子(0,1,2,3) + 1个对子
     return checkMeldAndPair(allTiles);
+}
+
+// 清一色
+function isQingYiSe(tiles: Tile[]) : boolean {
+    const types = new Set<TileType>();
+    tiles.forEach(tile => types.add(tile.type));
+    return types.size === 1;
+}
+
+// 断幺九
+function isDuanYaoJiu(tiles: Tile[]) : boolean {
+    return tiles.every(tile => tile.value >= 2 && tile.value <= 8);
+}
+
+// 计算根
+function countGen(hand: Tile[], melds: Meld[]) : number {
+    let gen = 0;
+
+    for (const m of melds) {
+        if (m.type === 'kan' || m.type === 'ankan') {
+            gen += 1;
+        }
+    }
+
+    // 四归一
+    const tileCount : Record<string, number> = {};
+    for (const tile of hand) {
+        const key = tile.type + tile.value;
+        tileCount[key] = (tileCount[key] || 0) + 1;
+    }
+    for (const count of Object.values(tileCount)) {
+        if (count === 4) {
+            gen += 1;
+        }
+    }
+    return gen;
+}
+
+export interface FanResult {
+    fan: number;
+    fanTypes: string[];
+};
+
+export function calcFan(
+    hand: Tile[],
+    melds: Meld[],
+    _opts?: {}
+) : FanResult {
+    const tiles = buildAllTiles(hand, melds);
+
+    if (!canHu(hand, melds)) {
+        return { fan: 0, fanTypes: [] };
+    }
+
+    let fan = 0;
+    const fanTypes: string[] = [];
+
+    if (checkQiDui(hand)) {
+        fan += 2;
+        fanTypes.push('七对');
+    }
+
+    if (isQingYiSe(tiles)) {
+        fan += 2;
+        fanTypes.push('清一色');
+    }
+
+    if (isDuanYaoJiu(tiles)) {
+        fan += 1;
+        fanTypes.push('断幺九');
+    }
+
+    const gen = countGen(hand, melds);
+    if (gen > 0) {
+        fan += gen;
+        fanTypes.push(`根 ${gen}`);
+    }
+
+    // TODO: 对对和、杠上炮、金钩钓、抢杠、杠上花、海底、全带幺
+
+    return { fan, fanTypes };
 }
