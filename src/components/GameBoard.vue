@@ -49,37 +49,38 @@
         <div class="player-section">
           <div class="player-with-controls">
             <PlayerHand :player="humanPlayer" :isCurrentPlayer="isHumanTurn" :showHand="true"
-              :lastGetTile="humanPlayer.lastGetTile!"
-              @tileClick="handleTileClick" />
-          </div>
-          <!-- 展示切牌按钮 -->
-          <div v-if="isHumanTurn" class="discard-button" :class="{ disable: !selectedTile }" @click="handleDiscard">
-            切牌
-          </div>
-          <!-- 展示碰按钮 -->
-          <div v-if="isHumanTurn && humanPlayer.playerState.canPon" class="pon-button" @click="handlePon">
-            碰
-          </div>
-          <!-- 展示杠按钮 -->
-          <div v-if="isHumanTurn && humanPlayer.playerState.canKan" class="kan-button" @click="handleKan">
-            杠
-          </div>
-          <!-- 展示暗杠按钮 -->
-          <div v-if="isHumanTurn && humanPlayer.playerState.canAnKan
-          " class="ankan-button" @click="handleAnKan">
-          暗杠
-          </div>
-          <!-- 展示荣和按钮 -->
-          <div v-if="isHumanTurn && humanPlayer.playerState.canRon" class="ron-button" @click="handleRon">
-            和
-          </div>
-          <!-- 展示自摸按钮 -->
-          <div v-if="isHumanTurn && humanPlayer.playerState.canTsumo" class="tsumo-button" @click="handleTsumo">
-            自摸
-          </div>
-          <!-- 展示跳过按钮 -->
-          <div v-if="isHumanTurn && humanPlayer.hasReaction()" class="skip-button" @click="handleSkip">
-            跳过
+              :lastGetTile="humanPlayer.lastGetTile!" @tileClick="handleTileClick" />
+            <div class="action-buttons">
+              <!-- 展示切牌按钮 -->
+              <div v-if="isHumanTurn" class="discard-button" :class="{ disable: !selectedTile }" @click="handleDiscard">
+                切牌
+              </div>
+              <!-- 展示碰按钮 -->
+              <div v-if="isHumanTurn && humanPlayer.playerState.canPon" class="pon-button" @click="handlePon">
+                碰
+              </div>
+              <!-- 展示杠按钮 -->
+              <div v-if="isHumanTurn && humanPlayer.playerState.canKan" class="kan-button" @click="handleKan">
+                杠
+              </div>
+              <!-- 展示暗杠按钮 -->
+              <div v-if="isHumanTurn && humanPlayer.playerState.canAnKan
+              " class="ankan-button" @click="handleAnKan">
+                暗杠
+              </div>
+              <!-- 展示荣和按钮 -->
+              <div v-if="isHumanTurn && humanPlayer.playerState.canRon" class="ron-button" @click="handleRon">
+                和
+              </div>
+              <!-- 展示自摸按钮 -->
+              <div v-if="isHumanTurn && humanPlayer.playerState.canTsumo" class="tsumo-button" @click="handleTsumo">
+                自摸
+              </div>
+              <!-- 展示跳过按钮 -->
+              <div v-if="isHumanTurn && humanPlayer.hasReaction()" class="skip-button" @click="handleSkip">
+                跳过
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -403,6 +404,15 @@ const handleNextRound = () => {
   align-items: center;
 }
 
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 4px;
+  min-width: 72px;
+}
+
 .player-with-controls {
   display: flex;
   align-items: flex-start;
@@ -432,45 +442,52 @@ const handleNextRound = () => {
   }
 }
 
-.discard-button {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-  border: 3px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 6px 16px rgba(33, 150, 243, 0.6);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.discard-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(33, 150, 243, 0.8);
-}
-
-/* 禁用状态（selectedTile 为空时加的 disable class） */
 .discard-button.disable {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  filter: none;
 }
 
+.discard-button,
 .pon-button,
 .kan-button,
 .ankan-button,
 .ron-button,
-.tsumo-button {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+.tsumo-button,
+.skip-button {
+  width: 90px;
+  height: 36px;
+  border-radius: 6px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-/* 各自颜色： */
+.discard-button:hover,
+.pon-button:hover,
+.kan-button:hover,
+.ankan-button:hover,
+.ron-button:hover,
+.tsumo-button:hover,
+.skip-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  filter: brightness(1.05);
+}
+
+.discard-button {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+}
+
 .pon-button {
   background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
 }
@@ -492,29 +509,7 @@ const handleNextRound = () => {
 }
 
 .skip-button {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  cursor: pointer;
-  transition: all 0.2s ease;
   background: linear-gradient(135deg, #9e9e9e 0%, #616161 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-
-/* 悬浮通用效果 */
-.pon-button:hover,
-.kan-button:hover,
-.ankan-button:hover,
-.ron-button:hover,
-.skip-button:hover,
-.tsumo-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
 }
 
 .settlement-overlay {
