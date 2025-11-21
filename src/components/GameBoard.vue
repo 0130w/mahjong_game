@@ -10,7 +10,8 @@
       <div class="player-area player-top">
         <div class="player-section">
           <PlayerHand :player="gameStore.players[PlayerID.PLAYER_1]!"
-            :isCurrentPlayer="gameStore.currentPlayerIndex === PlayerID.PLAYER_1" :showHand="false" />
+            :isCurrentPlayer="gameStore.currentPlayerIndex === PlayerID.PLAYER_1" :showHand="false"
+            :lastGetTile="gameStore.players[PlayerID.PLAYER_1]!.lastGetTile!" />
         </div>
       </div>
 
@@ -48,6 +49,7 @@
         <div class="player-section">
           <div class="player-with-controls">
             <PlayerHand :player="humanPlayer" :isCurrentPlayer="isHumanTurn" :showHand="true"
+              :lastGetTile="humanPlayer.lastGetTile!"
               @tileClick="handleTileClick" />
           </div>
           <!-- 展示切牌按钮 -->

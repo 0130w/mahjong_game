@@ -3,12 +3,15 @@
     <!-- 手牌区域 -->
     <div class="hand-area">
       <div class="hand-tiles" v-if="showHand">
-        <TileComponent v-for="tile in player.hand" :key="tile.id" :tile="tile"
-          :isSelected="props.selectedTile?.id === tile.id" :clickable="isCurrentPlayer"
-          :isLastGetTile="props.lastGetTile?.id === tile.id" @click="handleTileClick(tile)" />
+        <div v-for="tile in player.hand" :key="tile.id" class="hand-tile-wrapper"
+          :class="{ 'is-drawn-tile': props.lastGetTile?.id === tile.id }">
+          <TileComponent :tile="tile" :isSelected="props.selectedTile?.id === tile.id" :clickable="isCurrentPlayer"
+            @click="handleTileClick(tile)" />
+        </div>
       </div>
       <div class="hand-tiles-hidden" v-else>
-        <div v-for="(,index) in player.hand" :key="`hidden-${index}`" class="tile-back">
+        <div v-for="(tile, index) in player.hand" :key="`hidden-${index}`" class="tile-back"
+          :class="{ 'is-drawn-tile-back': props.lastGetTile?.id === tile.id }">
           <div class="tile-back-pattern"></div>
         </div>
       </div>
@@ -30,7 +33,6 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   showHand: true,
-  highlightedTiles: () => new Set(),
 });
 
 const emit = defineEmits<{
@@ -98,7 +100,7 @@ const handleTileClick = (tile: Tile) => {
 }
 
 /* 新摸的牌增加左边距 */
-.hand-tiles .is-drawn-tile {
+.hand-tiles .hand-tile-wrapper.is-drawn-tile {
   margin-left: 8px;
 }
 
