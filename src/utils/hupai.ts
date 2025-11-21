@@ -189,3 +189,9 @@ export function calcFan(
 
     return { fan, fanTypes };
 }
+
+export function fanToPoints(fan: number) : number {
+    const MAX_FAN = 8;  // 封顶
+    const capped = Math.min(fan, MAX_FAN);
+    return Math.pow(2, capped);
+}

@@ -70,6 +70,7 @@ export class Player {
   lastDiscardTile: Tile | null;
   lastGetTile: Tile | null;
   actionListener: ((action: PlayerAction) => void) | null;
+  score: number;
 
   constructor(id: number, name: string, hand: Tile[]) {
     this.id = id;
@@ -81,6 +82,7 @@ export class Player {
     this.lastDiscardTile = null;
     this.lastGetTile = null;
     this.actionListener = null;
+    this.score = 50;
   }
 
   getTile(tile: Tile) {

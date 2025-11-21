@@ -4,7 +4,7 @@ import { Player, PlayerID } from '../utils/define';
 import { createFullWall, shuffleWall, dealTiles, sortHand } from '../utils/tiles';
 import { ref } from 'vue';
 import type { GamePhase, RoundResult } from '../utils/define';
-import { calcFan } from '../utils/hupai';
+import { calcFan, fanToPoints } from '../utils/hupai';
 
 export const useGameStore = defineStore('game', () => {
 
@@ -20,23 +20,35 @@ export const useGameStore = defineStore('game', () => {
   function initRound() {
     wall.value = shuffleWall(createFullWall());
     currentPlayerIndex.value = 0;
-    let player_0 = new Player(PlayerID.PLAYER_0, '我', []);
-    // TODO: 初始情况下，连摸13张的逻辑需要更换为轮流摸一张，摸13轮
+
+    if (players.value.length === 0) {
+      const player_0 = new Player(PlayerID.PLAYER_0, '我', []);
+      const player_1 = new Player(PlayerID.PLAYER_1, '对手', []);
+      players.value = [player_0, player_1];
+    }
+
+    const player_0 = players.value[PlayerID.PLAYER_0]!;
+    const player_1 = players.value[PlayerID.PLAYER_1]!;
+
+    [player_0, player_1].forEach(player => {
+      player.hand = [];
+      player.discards = [];
+      player.melds = [];
+      player.lastDiscardTile = null;
+      player.lastGetTile = null;
+      player.resetState();
+    });
+
     {
       const { dealt, remaining } = dealTiles(wall.value, 13);
       player_0.hand = sortHand(dealt);
       wall.value = remaining;
     }
-    let player_1 = new Player(PlayerID.PLAYER_1, '对手', []);
     {
       const { dealt, remaining } = dealTiles(wall.value, 13);
       player_1.hand = sortHand(dealt);
       wall.value = remaining;
     }
-    players.value = [
-      player_0,
-      player_1
-    ];
   }
 
   function startNewGame() {
@@ -196,6 +208,25 @@ export const useGameStore = defineStore('game', () => {
 
   function gameSettlement(result: RoundResult) {
     lastRoundResult.value = result;
+
+    // 结算分数
+
+    if (result.endType === 'ron') {
+      const score = fanToPoints(result.han!);
+      players.value[result.winnerId!]!.score += score;
+      players.value[result.loserId!]!.score -= score;
+    }
+
+    // 双人对战，自摸等于对方扣分
+    if (result.endType === 'tsumo') {
+      const score = fanToPoints(result.han!);
+      const loserId = result.winnerId === PlayerID.PLAYER_0 ? PlayerID.PLAYER_1 : PlayerID.PLAYER_0;
+      players.value[result.winnerId!]!.score += score;
+      players.value[loserId!]!.score -= score;
+    }
+
+    // TODO:花猪
+
     phase.value = 'finished';
   }
 

@@ -30,9 +30,9 @@
               <GameInfoPanel :roundNumber="gameStore.roundNumber"
               :wallCount="gameStore.wall.length"
               :playerName="humanPlayer.name"
-              :playerScore="0"
+              :playerScore="humanPlayer.score"
               :opponentName="gameStore.players[PlayerID.PLAYER_1]!.name"
-              :opponentScore="0"
+              :opponentScore="gameStore.players[PlayerID.PLAYER_1]!.score"
               playerWind="東"
               opponentWind="南" />
             </div>
