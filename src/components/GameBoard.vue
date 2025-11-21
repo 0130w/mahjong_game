@@ -1,6 +1,6 @@
 <template>
   <div class="game-board">
-    <div class="game-container">
+    <div v-if="gameStore.players.length >= 2" class="game-container">
       <!-- 对家副露区 - 左侧 -->
       <div class="meld-area meld-area-opponent">
         <OpponentMeldDisplay :melds="gameStore.players[PlayerID.PLAYER_1]!.melds" />

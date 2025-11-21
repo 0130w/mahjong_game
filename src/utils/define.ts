@@ -97,9 +97,12 @@ export class Player {
   // 摸牌后检查状态，只需检查
   // 杠、暗杠、自摸
   checkStateWithoutTile() {
+    console.log("Start checkStateWithoutTile")
     this.playerState.canKan = this.melds.find(m => m.type === 'pon' && m.tile.value === this.lastGetTile?.value && m.tile.type === this.lastGetTile?.type) !== undefined;
     this.playerState.canAnKan = this.hand.filter(t => t.type === this.lastGetTile?.type && t.value === this.lastGetTile?.value).length == 4;
     this.playerState.canTsumo = canHu(this.hand, this.melds);
+    // print player state
+    console.log("Player state: ", this.playerState);
   }
 
   // 对手打牌后检查状态，只需检查
@@ -121,6 +124,7 @@ export class Player {
   }
 
   handlePon(tile: Tile) {
+    console.log("Handle pon")
     this.hand = this.hand.filter(t => t.type != tile.type || t.value != tile.value);
     this.melds.push({ tile, type: 'pon' });
   }

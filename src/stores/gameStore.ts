@@ -77,6 +77,22 @@ export const useGameStore = defineStore('game', () => {
   }
 
   async function runTurn(player: Player, opponent: Player, shouldDraw: boolean) {
+
+    if (player.hasReaction()) {
+      if (isAIPlayer(player)) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await doAction({ type: 'skip' }, player, opponent);
+      } else {
+        const action = await waitForPlayerAction(player, 20000);
+        if (!action) {
+          await doAction({ type: 'skip' }, player, opponent);
+        } else {
+          await doAction(action, player, opponent);
+        }
+      }
+      return;
+    }
+
     if (shouldDraw) {
       if (wall.value.length === 0) {
         await doAction({ type: 'ryuukyoku' }, player, opponent);
@@ -92,18 +108,17 @@ export const useGameStore = defineStore('game', () => {
       const idx = Math.floor(Math.random() * player.hand.length);
       const tile = player.hand[idx]!;
       await doAction({ type: 'discard', tile: tile }, player, opponent);
-      return;
-    }
-
-    const action = await waitForPlayerAction(player, 20000);
-
-    if (!action) {
-      // 超时逻辑：随机打牌
-      const idx = Math.floor(Math.random() * player.hand.length);
-      const tile = player.hand[idx]!;
-      await doAction({ type: 'discard', tile: tile }, player, opponent);
     } else {
-      await doAction(action, player, opponent);
+      const action = await waitForPlayerAction(player, 20000);
+
+      if (!action) {
+        // 超时逻辑：随机打牌
+        const idx = Math.floor(Math.random() * player.hand.length);
+        const tile = player.hand[idx]!;
+        await doAction({ type: 'discard', tile: tile }, player, opponent);
+      } else {
+        await doAction(action, player, opponent);
+      }
     }
   }
 
@@ -121,44 +136,30 @@ export const useGameStore = defineStore('game', () => {
 
         const discardTile = player.lastDiscardTile!;
         opponent.checkStateWithTile(discardTile);
-        if (!opponent.hasReaction()) {
-          currentPlayerIndex.value = opponent.id;
-          return;
-        }
         currentPlayerIndex.value = opponent.id;
-
-        if (isAIPlayer(opponent)) {
-          // TODO: 优化成真正的AI逻辑
-          return await doAction({ type: 'skip' }, opponent, player);
-        } else {
-          const opAction = await waitForPlayerAction(opponent, 20000);
-          return await doAction(opAction, opponent, player);
-        }
+        return;
       }
       case 'pon': {
         const tile = opponent.lastDiscardTile!;
         player.handlePon(tile);
         opponent.lastDiscardTile = null;
         opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
-        await runTurn(player, opponent, false);
         return;
       }
-      case 'kan': {
-        let tile: Tile;
-        if (opponent.lastDiscardTile) {
-          tile = opponent.lastDiscardTile!;
-          opponent.lastDiscardTile = null;
-          opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
-        } else {
-          tile = player.lastGetTile!;
-        }
-        player.handleKan(tile);
-        await runTurn(player, opponent, true);
-        return;
-      }
+      case 'kan':
       case 'ankan': {
-        player.handleAnKan();
-        await runTurn(player, opponent, true);
+        let tile: Tile;
+        if (action.type === 'kan') {
+          tile = opponent.lastDiscardTile ? opponent.lastDiscardTile! : player.lastGetTile!;
+          if (opponent.lastDiscardTile) {
+            opponent.lastDiscardTile = null;
+            opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
+          }
+          player.handleKan(tile);
+        } else {
+          player.handleAnKan();
+        }
+        discardOnly.value = true;
         return;
       }
       case 'ron': {
@@ -192,8 +193,10 @@ export const useGameStore = defineStore('game', () => {
         await doAction({ type: 'ryuukyoku' }, player, opponent);
         continue;
       }
-      const shouldDraw = !discardOnly.value;
-      discardOnly.value = false;
+      const shouldDraw = !discardOnly.value && !player.hasReaction();
+      if (discardOnly.value) {
+        discardOnly.value = false;
+      }
       await runTurn(player, opponent, shouldDraw);
     }
   }
