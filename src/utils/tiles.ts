@@ -1,4 +1,4 @@
-import type { Tile, TileType, Player } from '../utils/define';
+import type { Tile, TileType } from '../utils/define';
 
 const TILE_DISPLAY: Record<TileType, string[]> = {
   man: ['一万', '二万', '三万', '四万', '五万', '六万', '七万', '八万', '九万'],
