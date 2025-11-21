@@ -73,6 +73,31 @@
           <div v-if="isHumanTurn && humanPlayer.hasReaction()" class="skip-button" @click="handleSkip"> </div>
         </div>
       </div>
+      <!-- 局结算弹窗 -->
+      <div v-if="gameStore.phase === 'finished' && gameStore.lastRoundResult" class="settlement-overlay">
+        <div class="settlement-dialog">
+          <h3> 第 {{ gameStore.roundNumber }} 局结算 </h3>
+          <p v-if="gameStore.lastRoundResult.endType === 'ron'">
+            {{ winnerName }} 荣和 {{ loserName }}
+            <span>
+              {{ gameStore.lastRoundResult.han }} 番
+            </span>
+          </p>
+
+          <p v-else-if="gameStore.lastRoundResult.endType === 'tsumo'">
+            {{ winnerName }} 自摸
+            <span>
+              {{ gameStore.lastRoundResult.han }} 番
+            </span>
+          </p>
+
+          <p v-else-if="gameStore.lastRoundResult.endType === 'ryuukyoku'">
+            流局
+          </p>
+
+          <button @click="handleNextRound"> 下一局</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -142,6 +167,18 @@ const handleTsumo = () => {
 const handleSkip = () => {
   currentPlayer.value.emitAction('skip');
 }
+
+const winnerName = computed(() => {
+  return gameStore.players[gameStore.lastRoundResult?.winnerId!]?.name;
+});
+
+const loserName = computed(() => {
+  return gameStore.players[gameStore.lastRoundResult?.loserId!]?.name;
+});
+
+const handleNextRound = () => {
+  gameStore.nextRound();
+};
 </script>
 
 <style scoped>
@@ -477,5 +514,35 @@ const handleSkip = () => {
 .tsumo-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.settlement-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settlement-dialog {
+  background: #222;
+  color: #fff;
+  padding: 24px 32px;
+  border-radius: 8px;
+  min-width: 260px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.settlement-dialog button {
+  margin-top: 16px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  background: #4caf50;
+  color: #fff;
+  cursor: pointer;
 }
 </style>
