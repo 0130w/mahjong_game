@@ -144,6 +144,8 @@ export const useGameStore = defineStore('game', () => {
         return;
       }
       case 'ankan': {
+        player.handleAnKan();
+        await runTurn(player, opponent, true);
         return;
       }
       case 'ron': {
