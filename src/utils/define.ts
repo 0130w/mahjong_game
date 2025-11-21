@@ -1,3 +1,5 @@
+import { canHu } from "./hupai";
+
 // 麻将牌类型
 export type TileType = 'man' | 'pin' | 'sou'; // 万、筒、索
 
@@ -96,7 +98,7 @@ export class Player {
   checkStateWithoutTile() {
     this.playerState.canKan = this.melds.find(m => m.type === 'pon' && m.tile.value === this.lastGetTile?.value && m.tile.type === this.lastGetTile?.type) !== undefined;
     this.playerState.canAnKan = this.hand.filter(t => t.type === this.lastGetTile?.type && t.value === this.lastGetTile?.value).length == 4;
-    // TODO: check tsumo
+    this.playerState.canTsumo = canHu(this.hand, this.melds);
   }
 
   // 对手打牌后检查状态，只需检查
@@ -104,7 +106,7 @@ export class Player {
   checkStateWithTile(tile: Tile) {
     this.playerState.canPon = this.hand.filter(t => t.type === tile.type && t.value === tile.value).length == 2;
     this.playerState.canKan = this.hand.filter(t => t.type === tile.type && t.value === tile.value).length == 3;
-    // TODO: check ron
+    this.playerState.canRon = canHu([...this.hand, tile], this.melds);
   }
 
   resetState() {
