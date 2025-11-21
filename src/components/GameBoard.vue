@@ -114,7 +114,7 @@
             流局
           </p>
 
-          <button @click="handleNextRound"> 下一局</button>
+          <button @click="handleNextRound"> 下一局 </button>
         </div>
       </div>
     </div>
@@ -150,8 +150,11 @@ const handleTileClick = (tile: Tile) => {
 
 const handleDiscard = () => {
   if (!selectedTile.value) return;
-  currentPlayer.value.emitAction({ type: 'discard', tile: selectedTile.value });
+  const tileDiscard = selectedTile.value;
   selectedTile.value = null;
+  setTimeout(() => {
+    currentPlayer.value.emitAction({ type: 'discard', tile: tileDiscard });
+  }, 0)
 }
 
 const handlePon = () => {
