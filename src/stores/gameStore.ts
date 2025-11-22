@@ -58,12 +58,15 @@ export const useGameStore = defineStore('game', () => {
 
   function waitForPlayerAction(player: Player, timeoutMs: number): Promise<PlayerAction | null> {
     return new Promise((resolve, _) => {
+      let timerId : any;
       const off = player.registerActionListener((action) => {
+        clearTimeout(timerId);
         off();
         resolve(action);
       });
 
-      setTimeout(() => {
+      timerId = setTimeout(() => {
+        console.warn("[Auto discard] player", player.id, "auto action will be triggered");
         off();
         resolve(null);
       }, timeoutMs);
@@ -113,6 +116,7 @@ export const useGameStore = defineStore('game', () => {
 
       if (!action) {
         // 超时逻辑：随机打牌
+        console.warn("[Auto discard] player", player.id, "timeout discard randomly");
         const idx = Math.floor(Math.random() * player.hand.length);
         const tile = player.hand[idx]!;
         await doAction({ type: 'discard', tile: tile }, player, opponent);
@@ -143,6 +147,7 @@ export const useGameStore = defineStore('game', () => {
         const tile = opponent.lastDiscardTile!;
         player.handlePon(tile);
         opponent.lastDiscardTile = null;
+        discardOnly.value = true;
         opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
         return;
       }
@@ -177,6 +182,7 @@ export const useGameStore = defineStore('game', () => {
         return;
       }
       default: {
+        console.warn('Unknown action: ', action);
         currentPlayerIndex.value = opponent.id;
         return;
       }

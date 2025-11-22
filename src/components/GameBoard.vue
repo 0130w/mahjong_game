@@ -27,14 +27,10 @@
             </div>
 
             <div class="table-center">
-              <GameInfoPanel :roundNumber="gameStore.roundNumber"
-              :wallCount="gameStore.wall.length"
-              :playerName="humanPlayer.name"
-              :playerScore="humanPlayer.score"
-              :opponentName="gameStore.players[PlayerID.PLAYER_1]!.name"
-              :opponentScore="gameStore.players[PlayerID.PLAYER_1]!.score"
-              playerWind="東"
-              opponentWind="南" />
+              <GameInfoPanel :roundNumber="gameStore.roundNumber" :wallCount="gameStore.wall.length"
+                :playerName="humanPlayer.name" :playerScore="humanPlayer.score"
+                :opponentName="gameStore.players[PlayerID.PLAYER_1]!.name"
+                :opponentScore="gameStore.players[PlayerID.PLAYER_1]!.score" playerWind="東" opponentWind="南" />
             </div>
 
             <div class="discard-section player-discards">
@@ -57,10 +53,11 @@
         <div class="player-section">
           <div class="player-with-controls">
             <PlayerHand :player="humanPlayer" :isCurrentPlayer="isHumanTurn" :showHand="true"
-              :lastGetTile="humanPlayer.lastGetTile!" @tileClick="handleTileClick" />
+              :lastGetTile="humanPlayer.lastGetTile!" :selectedTile="selectedTile!" @tileClick="handleTileClick" />
             <div class="action-buttons">
               <!-- 展示切牌按钮 -->
-              <div v-if="isHumanTurn" class="discard-button" :class="{ disable: !selectedTile }" @click="handleDiscard">
+              <div v-if="isHumanTurn && !humanPlayer.hasReaction()" class="discard-button"
+                :class="{ disable: !selectedTile }" @click="handleDiscard">
                 切牌
               </div>
               <!-- 展示碰按钮 -->
@@ -149,12 +146,21 @@ const handleTileClick = (tile: Tile) => {
 };
 
 const handleDiscard = () => {
-  if (!selectedTile.value) return;
+  if (!isHumanTurn.value) {
+    console.warn('handleDiscard called when not human turn');
+    return;
+  }
+  if (!selectedTile.value) {
+    console.warn('handleDiscard called when no tile selected');
+    return;
+  }
   const tileDiscard = selectedTile.value;
+  if (!tileDiscard) {
+    console.warn('handleDiscard called when no tile selected');
+    return;
+  }
   selectedTile.value = null;
-  setTimeout(() => {
-    currentPlayer.value.emitAction({ type: 'discard', tile: tileDiscard });
-  }, 0)
+  currentPlayer.value.emitAction({ type: 'discard', tile: tileDiscard });
 }
 
 const handlePon = () => {

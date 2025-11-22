@@ -16,7 +16,7 @@ export interface Meld {
   type: 'pon' | 'kan' | 'ankan';
 };
 
-export type PlayerAction = 
+export type PlayerAction =
   | { type: 'discard', tile: Tile }
   | { type: 'pon' }
   | { type: 'kan' }
@@ -99,7 +99,7 @@ export class Player {
   checkStateWithoutTile() {
     console.log("Start checkStateWithoutTile")
     this.playerState.canKan = this.melds.find(m => m.type === 'pon' && m.tile.value === this.lastGetTile?.value && m.tile.type === this.lastGetTile?.type) !== undefined;
-    this.playerState.canAnKan = this.hand.filter(t => t.type === this.lastGetTile?.type && t.value === this.lastGetTile?.value).length == 4;
+    this.playerState.canAnKan = this.hand.some(t0 => this.hand.filter(t => t.type === t0.type && t.value === t0.value).length === 4);
     this.playerState.canTsumo = canHu(this.hand, this.melds);
     // print player state
     console.log("Player state: ", this.playerState);
@@ -153,7 +153,11 @@ export class Player {
 
   registerActionListener(listener: (action: PlayerAction) => void) {
     this.actionListener = listener;
-    return () => { this.actionListener = null; }
+    return () => {
+      if (this.actionListener === listener) {
+        this.actionListener = null;
+      }
+    }
   }
 
   emitAction(action: PlayerAction) {
