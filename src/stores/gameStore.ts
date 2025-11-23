@@ -204,7 +204,8 @@ export const useGameStore = defineStore('game', () => {
         return;
       }
       case 'ron': {
-        const { fan } = calcFan(player.hand, player.melds);
+        const winningTile = opponent.lastDiscardTile!;
+        const { fan } = calcFan(player.hand, player.melds, winningTile);
         gameSettlement({ endType: 'ron', winnerId: player.id, loserId: opponent.id, han: fan });
         return;
       }
