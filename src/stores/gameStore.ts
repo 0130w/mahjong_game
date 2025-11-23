@@ -164,7 +164,6 @@ export const useGameStore = defineStore('game', () => {
         } else {
           player.handleAnKan();
         }
-        discardOnly.value = true;
         return;
       }
       case 'ron': {

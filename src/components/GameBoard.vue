@@ -404,39 +404,41 @@ const handleNextRound = () => {
 }
 
 .table-middle-row {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  height: 260px; 
   align-items: center;
-  justify-content: center;
-  gap: 32px;
-  min-height: 100px;
+  gap: 0; 
+  width: 100%;
 }
 
 .center-panel-wrapper {
-  flex-shrink: 0;
+  grid-column: 2;
   z-index: 10;
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 0 50px; 
 }
 
 .side-pool {
   display: grid;
   grid-template-rows: repeat(5, auto);
-  grid-auto-flow: column; 
-  gap: 0px 12px;
-  align-content: center; 
-  justify-content: center;
-  height: auto;
-  width: auto;
-  max-width: 300px; 
+  grid-auto-flow: column;
+  gap: 0px 10px;
+  align-content: center;
+  height: 100%;
+  width: 100%;
 }
 
 .player-side {
+  grid-column: 1;
   direction: rtl;
-  justify-content: end;
+  justify-content: end; 
 }
 
 .opponent-side {
+  grid-column: 3;
   direction: ltr;
   justify-content: start;
 }
@@ -445,26 +447,28 @@ const handleNextRound = () => {
 .player-rotated {
   transform: rotate(90deg);
   transform-origin: center center;
-  margin: -6px 0; 
+  margin: -4px 0; 
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-  display: block; 
+  display: block;
+  position: relative; 
 }
 
 :deep(.opponent-rotated),
 .opponent-rotated {
-  transform: rotate(90deg);
+  transform: rotate(-90deg) scaleY(-1);
   transform-origin: center center;
-  margin: -6px 0;
+  margin: -4px 0;
   box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.2);
   display: block;
+  position: relative;
 }
 
 @media screen and (max-height: 900px) {
-  :deep(.player-rotated),
-  .player-rotated,
-  :deep(.opponent-rotated),
-  .opponent-rotated {
-    margin: -5px 0;
+  .table-middle-row {
+    height: 200px;
+  }
+  .center-panel-wrapper {
+    padding: 0 30px;
   }
 }
 
