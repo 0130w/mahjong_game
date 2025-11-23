@@ -1,4 +1,4 @@
-import type { Tile } from '../utils/define';
+import type { Tile, TileType } from '../utils/define';
 
 /**
  * 根据麻将牌获取对应的图片路径
@@ -26,4 +26,14 @@ export function getTileImagePath(tile: Tile): string {
  */
 export function getTileBackImagePath(): string {
   return '/assets/tiles/back.svg';
+}
+
+export function preloadTileImages() {
+  const types: TileType[] = ['man', 'pin', 'sou'];
+  types.forEach((type) => {
+    for (let value = 1; value <= 9; value++) {
+      const img = new Image();
+      img.src = getTileImagePath({ id: `${type}-${value}`,type, value } as any);
+    }
+  });
 }

@@ -1,197 +1,191 @@
 import type { Tile, Meld, TileType } from "./define";
 
-function checkQiDui(hand: Tile[]) : boolean {
-    if (hand.length !== 14) {
-        return false;
+function getHandCounts(hand: Tile[]): Record<TileType, number[]> {
+  const counts: Record<TileType, number[]> = {
+    man: Array(10).fill(0),
+    pin: Array(10).fill(0),
+    sou: Array(10).fill(0),
+  };
+  for (const t of hand) {
+    if (t.value >= 1 && t.value <= 9) {
+      counts[t.type]![t.value]!++;
     }
-    const tileCount: Record<string, number> = {};
-    for (const tile of hand) {
-        const key = tile.type + tile.value;
-        tileCount[key] = (tileCount[key] || 0) + 1;
-    }
-    return Object.values(tileCount).every(count => count === 2);
+  }
+  return counts;
 }
 
-// 将手牌和副露组合用来判胡，副露为杠只影响番数，可视为碰来判胡
-function buildAllTiles(hand: Tile[], melds: Meld[]) : Tile[]
-{
-    const tiles : Tile[] = [...hand];
-    for (const m of melds) {
-        tiles.push(m.tile, m.tile, m.tile);
+function getAllTiles(hand: Tile[], melds: Meld[]): Tile[] {
+  const tiles = [...hand];
+  for (const m of melds) {
+    const count = (m.type === 'kan' || m.type === 'ankan') ? 4 : 3;
+    for (let i = 0; i < count; i++) {
+      tiles.push(m.tile);
     }
-    return tiles;
+  }
+  return tiles;
 }
 
-// 缺一门判断
-function isQueYiMen(tiles: Tile[]) : boolean {
-    const types = new Set<TileType>();
-    tiles.forEach(tile => types.add(tile.type));
-    return types.size <= 2;
+function canDecompose(counts: number[]): boolean {
+  let i = 1;
+  while (i <= 9 && counts[i] === 0) i++;
+
+  if (i > 9) return true;
+
+  if (counts[i]! >= 3) {
+    counts[i]! -= 3;
+    if (canDecompose(counts)) return true;
+    counts[i]! += 3;
+  }
+
+  if (i <= 7 && counts[i + 1]! > 0 && counts[i + 2]! > 0) {
+    counts[i]!--;
+    counts[i + 1]!--;
+    counts[i + 2]!--;
+    if (canDecompose(counts)) return true;
+    counts[i]!++;
+    counts[i + 1]!++;
+    counts[i + 2]!++;
+  }
+
+  return false;
 }
 
-function canCompleteSuit(counts: number[]) : boolean {
-    const c = counts.slice();
+function checkStandardHu(hand: Tile[]): boolean {
+  if (hand.length % 3 !== 2) return false;
 
-    for (let i = 1; i <= 9; i++) {
-        while (c[i]! > 0) {
-            if (c[i]! >= 3) {
-                c[i]! -= 3;
-                continue;
-            }
+  const counts = getHandCounts(hand);
+  const suits: TileType[] = ['man', 'pin', 'sou'];
 
-            if (i <= 7 && c[i + 1]! > 0 && c[i + 2]! > 0) {
-                c[i]!--;
-                c[i + 1]!--;
-                c[i + 2]!--;
-                continue;
-            }
+  for (const suit of suits) {
+    for (let v = 1; v <= 9; v++) {
+      if (counts[suit]![v]! >= 2) {
+        counts[suit]![v]! -= 2;
 
-            return false;
+        let allSuitsValid = true;
+        for (const s of suits) {
+          const remainingCount = counts[s].reduce((a, b) => a + b, 0);
+          if (remainingCount % 3 !== 0) {
+            allSuitsValid = false;
+            break;
+          }
+          
+          if (!canDecompose([...counts[s]])) {
+            allSuitsValid = false;
+            break;
+          }
         }
-    }
-    return true;
-}
 
-function allSuitsComplete(grouped: Record<TileType, number[]>) : boolean {
-    return (
-        canCompleteSuit(grouped.man) &&
-        canCompleteSuit(grouped.pin) &&
-        canCompleteSuit(grouped.sou)
-    )
-}
+        counts[suit]![v]! += 2;
 
-function checkMeldAndPair(tiles: Tile[]) : boolean {
-    const n = tiles.length;
-    if (n < 2 || (n - 2) % 3 !== 0) {
-        return false;
-    }
-
-    const grouped: Record<TileType, number[]> = {
-        man: Array(10).fill(0),
-        pin: Array(10).fill(0),
-        sou: Array(10).fill(0),
-    };
-
-    for (const t of tiles) {
-        grouped[t.type]![t.value]!++;
-    }
-
-    const suits: TileType[] = ['man', 'pin', 'sou'];
-
-    for (const suit of suits) {
-        const counts = grouped[suit];
-        for (let v = 1; v <= 9; v++) {
-            if (counts[v]! >= 2) {
-                const gCopy: Record<TileType, number[]> = {
-                    man: grouped.man.slice(),
-                    pin: grouped.pin.slice(),
-                    sou: grouped.sou.slice(),
-                };
-                gCopy[suit]![v]! -= 2;
-                if (allSuitsComplete(gCopy)) {
-                    return true;
-                }
-            }
+        if (allSuitsValid) {
+          return true;
         }
+      }
     }
-    return false;
+  }
+
+  return false;
 }
 
-export function canHu(tiles: Tile[], melds: Meld[]) : boolean {
-    if (checkQiDui(tiles)) {
-        return true;
+function checkQiDui(hand: Tile[], melds: Meld[]): boolean {
+  if (melds.length > 0) return false;
+  if (hand.length !== 14) return false;
+
+  const counts = getHandCounts(hand);
+  let pairCount = 0;
+
+  for (const suit of ['man', 'pin', 'sou'] as TileType[]) {
+    for (let v = 1; v <= 9; v++) {
+      const c = counts[suit][v];
+      if (c === 0) continue;
+      if (c! % 2 !== 0) return false;
+      pairCount += c! / 2;
     }
-    const allTiles = buildAllTiles(tiles, melds);
-    if (!isQueYiMen(allTiles)) {
-        return false;
-    }
-    // k个面子(0,1,2,3) + 1个对子
-    return checkMeldAndPair(allTiles);
+  }
+  return pairCount === 7;
 }
 
-// 清一色
-function isQingYiSe(tiles: Tile[]) : boolean {
-    const types = new Set<TileType>();
-    tiles.forEach(tile => types.add(tile.type));
-    return types.size === 1;
+function isQueYiMen(allTiles: Tile[]): boolean {
+  const typeSet = new Set<TileType>();
+  allTiles.forEach(t => typeSet.add(t.type));
+  return typeSet.size <= 2;
 }
 
-// 断幺九
-function isDuanYaoJiu(tiles: Tile[]) : boolean {
-    return tiles.every(tile => tile.value >= 2 && tile.value <= 8);
+function isQingYiSe(allTiles: Tile[]): boolean {
+  const typeSet = new Set<TileType>();
+  allTiles.forEach(t => typeSet.add(t.type));
+  return typeSet.size === 1;
 }
 
-// 计算根
-function countGen(hand: Tile[], melds: Meld[]) : number {
-    let gen = 0;
-
-    for (const m of melds) {
-        if (m.type === 'kan' || m.type === 'ankan') {
-            gen += 1;
-        }
-    }
-
-    // 四归一
-    const tileCount : Record<string, number> = {};
-    for (const tile of hand) {
-        const key = tile.type + tile.value;
-        tileCount[key] = (tileCount[key] || 0) + 1;
-    }
-    for (const count of Object.values(tileCount)) {
-        if (count === 4) {
-            gen += 1;
-        }
-    }
-    return gen;
+function isDuanYaoJiu(allTiles: Tile[]): boolean {
+  return allTiles.every(t => t.value >= 2 && t.value <= 8);
 }
 
 export interface FanResult {
-    fan: number;
-    fanTypes: string[];
-};
-
-export function calcFan(
-    hand: Tile[],
-    melds: Meld[],
-    _opts?: {}
-) : FanResult {
-    const tiles = buildAllTiles(hand, melds);
-
-    if (!canHu(hand, melds)) {
-        return { fan: 0, fanTypes: [] };
-    }
-
-    let fan = 0;
-    const fanTypes: string[] = [];
-
-    if (checkQiDui(hand)) {
-        fan += 2;
-        fanTypes.push('七对');
-    }
-
-    if (isQingYiSe(tiles)) {
-        fan += 2;
-        fanTypes.push('清一色');
-    }
-
-    if (isDuanYaoJiu(tiles)) {
-        fan += 1;
-        fanTypes.push('断幺九');
-    }
-
-    const gen = countGen(hand, melds);
-    if (gen > 0) {
-        fan += gen;
-        fanTypes.push(`根 ${gen}`);
-    }
-
-    // TODO: 对对和、杠上炮、金钩钓、抢杠、杠上花、海底、全带幺
-
-    return { fan, fanTypes };
+  fan: number;
+  fanTypes: string[];
 }
 
-export function fanToPoints(fan: number) : number {
-    const MAX_FAN = 8;  // 封顶
-    const capped = Math.min(fan, MAX_FAN);
-    return Math.pow(2, capped);
+export function canHu(hand: Tile[], melds: Meld[]): boolean {
+  const allTiles = getAllTiles(hand, melds);
+  
+  if (!isQueYiMen(allTiles)) {
+    return false;
+  }
+
+  if (checkQiDui(hand, melds)) return true;
+
+  if (checkStandardHu(hand)) return true;
+
+  return false;
+}
+
+export function calcFan(hand: Tile[], melds: Meld[]): FanResult {
+  if (!canHu(hand, melds)) {
+    return { fan: 0, fanTypes: [] };
+  }
+
+  let fan = 0;
+  const fanTypes: string[] = [];
+  const allTiles = getAllTiles(hand, melds);
+
+  if (checkQiDui(hand, melds)) {
+    fan += 2;
+    fanTypes.push('七对');
+  }
+
+  if (isQingYiSe(allTiles)) {
+    fan += 2;
+    fanTypes.push('清一色');
+  }
+
+  if (isDuanYaoJiu(allTiles)) {
+    fan += 1;
+    fanTypes.push('断幺九');
+  }
+
+  let genCount = 0;
+  const counts = getHandCounts(allTiles);
+  (['man', 'pin', 'sou'] as TileType[]).forEach((suit) => {
+    counts[suit].forEach((count: number) => {
+      if (count === 4) {
+        genCount++;
+      }
+    });
+  });
+
+  if (genCount > 0) {
+    fan += genCount;
+    fanTypes.push(`根 x${genCount}`);
+  }
+
+  // TODO: 碰碰胡、金钩钓 等其他番型可在此扩展
+  
+  return { fan, fanTypes };
+}
+
+export function fanToPoints(fan: number): number {
+  const MAX_FAN = 8;
+  const effectiveFan = Math.min(fan, MAX_FAN);
+  return 5 * Math.pow(2, effectiveFan);
 }
