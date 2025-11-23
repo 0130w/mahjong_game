@@ -102,7 +102,6 @@ export const useGameStore = defineStore('game', () => {
       });
 
       timerId = setTimeout(() => {
-        console.warn("[Auto discard] player", player.id, "auto action will be triggered");
         off();
         resolve(null);
       }, timeoutMs);
@@ -152,7 +151,6 @@ export const useGameStore = defineStore('game', () => {
 
       if (!action) {
         // 超时逻辑：随机打牌
-        console.warn("[Auto discard] player", player.id, "timeout discard randomly");
         const idx = Math.floor(Math.random() * player.hand.length);
         const tile = player.hand[idx]!;
         await doAction({ type: 'discard', tile: tile }, player, opponent);
