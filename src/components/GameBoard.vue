@@ -28,7 +28,7 @@
             <div class="discard-section-main opponent-main">
               <div class="main-grid-tiles">
                 <OpponentDiscardTile v-for="(tile, index) in opponentDiscardsMain" :key="`op-main-${index}`"
-                  :tile="tile" />
+                  :tile="tile" :style="{ zIndex: 100 - index }" />
               </div>
             </div>
             <div class="table-middle-row">
@@ -44,7 +44,7 @@
               </div>
               <div class="side-pool opponent-side">
                 <OpponentDiscardTile v-for="(tile, index) in opponentDiscardsSide" :key="`p1-side-${index}`"
-                  :tile="tile" class="side-tile opponent-rotated" />
+                  :tile="tile" class="side-tile opponent-rotated" :style="{ zIndex: 100 - index }" />
               </div>
             </div>
             <div class="discard-section-main player-main">
