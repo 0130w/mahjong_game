@@ -185,16 +185,13 @@ const handleTileClick = (tile: Tile) => {
 
 const handleDiscard = () => {
   if (!isHumanTurn.value) {
-    console.warn('handleDiscard called when not human turn');
     return;
   }
   if (!selectedTile.value) {
-    console.warn('handleDiscard called when no tile selected');
     return;
   }
   const tileDiscard = selectedTile.value;
   if (!tileDiscard) {
-    console.warn('handleDiscard called when no tile selected');
     return;
   }
   selectedTile.value = null;
