@@ -19,6 +19,8 @@ export const useGameStore = defineStore('game', () => {
   const lastRoundResult = ref<RoundResult | null>(null);
   // 标记是否强制停止
   const isDestroyed = ref(false);
+  const isGangReplacementTurn = ref(false);
+  const isGangDiscard = ref(false);
 
   type OpponentInfo = {
     name: string;
@@ -48,6 +50,9 @@ export const useGameStore = defineStore('game', () => {
   function initRound() {
     wall.value = shuffleWall(createFullWall());
     currentPlayerIndex.value = 0;
+
+    isGangReplacementTurn.value = false;
+    isGangDiscard.value = false;
 
     if (players.value.length === 0) {
       const me = new Player(PlayerID.PLAYER_0, '我', [], '/assets/avatar/me.png');
@@ -161,10 +166,12 @@ export const useGameStore = defineStore('game', () => {
   }
 
   async function doAction(action: PlayerAction | null, player: Player, opponent: Player) {
+    const isLastTile = wall.value.length === 0;
     switch (action?.type) {
       case 'skip': {
         currentPlayerIndex.value = player.id;
         resetPlayersState();
+        isGangDiscard.value = false;
         return;
       }
       case 'discard': {
@@ -176,6 +183,14 @@ export const useGameStore = defineStore('game', () => {
         const discardTile = player.lastDiscardTile!;
         opponent.checkStateWithTile(discardTile);
         currentPlayerIndex.value = opponent.id;
+
+        if (isGangReplacementTurn.value) {
+          isGangDiscard.value = true;
+          isGangReplacementTurn.value = false;
+        } else {
+          isGangDiscard.value = false;
+        }
+
         return;
       }
       case 'pon': {
@@ -185,6 +200,8 @@ export const useGameStore = defineStore('game', () => {
         opponent.lastDiscardTile = null;
         discardOnly.value = true;
         opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
+        isGangDiscard.value = false; 
+        isGangReplacementTurn.value = false;
         return;
       }
       case 'kan':
@@ -195,22 +212,36 @@ export const useGameStore = defineStore('game', () => {
           if (opponent.lastDiscardTile) {
             opponent.lastDiscardTile = null;
             opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
+            isGangReplacementTurn.value = true;
+          } else {
+            isGangReplacementTurn.value = true;
           }
           player.handleKan(tile);
         } else {
           player.handleAnKan();
+          isGangReplacementTurn.value = true;
         }
+        isGangDiscard.value = false;
         resetPlayersState();
         return;
       }
       case 'ron': {
         const winningTile = opponent.lastDiscardTile!;
-        const { fan } = calcFan(player.hand, player.melds, winningTile);
+        const options = {
+          isGangShangPao: isGangDiscard.value,
+          isLastTile: isLastTile,
+          isQiangGang: (action as any).isQiangGang || false,
+        };
+        const { fan } = calcFan(player.hand, player.melds, winningTile, options);
         gameSettlement({ endType: 'ron', winnerId: player.id, loserId: opponent.id, han: fan });
         return;
       }
       case 'tsumo': {
-        const { fan } = calcFan(player.hand, player.melds);
+        const options = {
+          isGangShangHua: isGangReplacementTurn.value, // 是否是杠后摸到的这张牌
+          isLastTile: isLastTile                       // 海底捞月
+        };
+        const { fan } = calcFan(player.hand, player.melds, undefined, options);
         gameSettlement({ endType: 'tsumo', winnerId: player.id, han: fan });
         return;
       }
