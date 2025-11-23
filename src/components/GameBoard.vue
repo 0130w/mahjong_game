@@ -13,6 +13,12 @@
             :isCurrentPlayer="gameStore.currentPlayerIndex === PlayerID.PLAYER_1" :showHand="false"
             :lastGetTile="gameStore.players[PlayerID.PLAYER_1]!.lastGetTile!" />
         </div>
+        <div class="avatar-container opponent-avatar">
+          <div class="avatar-frame">
+            <img :src="opponentAvatar" alt="Opponent" />
+          </div>
+          <div class="avatar-name">{{ gameStore.players[PlayerID.PLAYER_1]!.name }}</div>
+        </div>
       </div>
 
       <!-- 中间区域：舍牌池 -->
@@ -59,6 +65,12 @@
       <div class="player-area player-bottom">
         <div class="player-section">
           <div class="player-with-controls">
+            <div class="avatar-container self-avatar">
+              <div class="avatar-frame">
+                <img :src="playerAvatar" alt="Me" />
+              </div>
+              <div class="avatar-name">{{ humanPlayer.name }}</div>
+            </div>
             <PlayerHand :player="humanPlayer" :isCurrentPlayer="isHumanTurn" :showHand="true"
               :lastGetTile="humanPlayer.lastGetTile!" :selectedTile="selectedTile!" @tileClick="handleTileClick" />
             <div class="action-buttons">
@@ -158,6 +170,12 @@ const opponentDiscardsMain = computed(() => {
 });
 const opponentDiscardsSide = computed(() => {
   return (gameStore.players[1]?.discards || []).slice(MAIN_DISCARD_COUNT);
+});
+const playerAvatar = computed(() => {
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${humanPlayer.value.name || 'User'}`;
+});
+const opponentAvatar = computed(() => {
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${gameStore.players[PlayerID.PLAYER_1]?.name || 'CPU'}`;
 });
 
 const handleTileClick = (tile: Tile) => {
@@ -406,9 +424,9 @@ const handleNextRound = () => {
 .table-middle-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  height: 260px; 
+  height: 260px;
   align-items: center;
-  gap: 0; 
+  gap: 0;
   width: 100%;
 }
 
@@ -418,7 +436,7 @@ const handleNextRound = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 50px; 
+  padding: 0 50px;
 }
 
 .side-pool {
@@ -434,7 +452,7 @@ const handleNextRound = () => {
 .player-side {
   grid-column: 1;
   direction: rtl;
-  justify-content: end; 
+  justify-content: end;
 }
 
 .opponent-side {
@@ -447,10 +465,10 @@ const handleNextRound = () => {
 .player-rotated {
   transform: rotate(90deg);
   transform-origin: center center;
-  margin: -4px 0; 
+  margin: -4px 0;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
   display: block;
-  position: relative; 
+  position: relative;
 }
 
 :deep(.opponent-rotated),
@@ -467,12 +485,14 @@ const handleNextRound = () => {
   .table-middle-row {
     height: 200px;
   }
+
   .center-panel-wrapper {
     padding: 0 30px;
   }
 }
 
 @keyframes pulse-glow {
+
   0%,
   100% {
     transform: scale(1);
@@ -629,5 +649,98 @@ const handleNextRound = () => {
   background: #4caf50;
   color: #fff;
   cursor: pointer;
+}
+
+/* 对家布局：横向排列，垂直居中 */
+.opponent-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: center; /* 这里的对齐方式决定了头像是和手牌顶部对齐还是居中 */
+  gap: 20px;
+}
+
+/* 调整自家控制区布局，防止头像挤压手牌 */
+.player-with-controls {
+  /* 原有样式保持，flex-direction 默认是 row */
+  align-items: flex-end; /* 让头像底部和手牌底部对齐，或者用 center */
+}
+
+.avatar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 30;
+  width: 100px; /* 头像区域宽度 */
+}
+
+/* 自家头像微调 */
+.self-avatar {
+  margin-right: 15px;
+  margin-bottom: 5px; /* 稍微抬高一点 */
+}
+
+/* 对家头像微调 */
+.opponent-avatar {
+  margin-left: 15px;
+  margin-top: 5px;
+}
+
+.avatar-frame {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px; /* 圆角矩形，也可以用 50% 变成圆形 */
+  background: rgba(20, 30, 40, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* 图片样式 */
+.avatar-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 名字标签 */
+.avatar-name {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.5);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* --- 动态效果 --- */
+
+/* 当前轮到自己时，头像框发蓝光 */
+.player-bottom .avatar-frame {
+  border-color: rgba(33, 150, 243, 0.6);
+  box-shadow: 0 0 15px rgba(33, 150, 243, 0.3);
+}
+
+/* 当前轮到对家时，对家头像框发红/橙光 */
+/* 这里假设你能通过 class 或 store 判断对家回合，
+   如果没有专门的类，这只是个静态样式，你可以通过 :class 动态绑定 */
+.player-top .avatar-frame {
+  border-color: rgba(255, 87, 34, 0.6);
+  box-shadow: 0 0 15px rgba(255, 87, 34, 0.3);
+}
+
+/* 简单的呼吸灯动画，让头像框看起来是活的 */
+@keyframes avatar-pulse {
+  0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
+  100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.1); }
+}
+
+.avatar-frame:hover {
+  transform: scale(1.05);
+  border-color: #fff;
 }
 </style>

@@ -16,7 +16,16 @@ import cover from '/assets/cover.png';
 const router = useRouter();
 const gameStore = useGameStore();
 
-const startGame = () => {
+const bgm = new Audio('/background.mp3');
+bgm.loop = true;
+bgm.play();
+
+const startGame = async () => {
+  try {
+    await bgm.play();
+  } catch (e) {
+    console.warn(e);
+  }
   gameStore.startNewGame();
   router.push('/game');
 };
