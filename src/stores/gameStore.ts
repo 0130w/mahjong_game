@@ -17,6 +17,8 @@ export const useGameStore = defineStore('game', () => {
   const discardOnly = ref<boolean>(false);
   const isAIPlayer = (player: Player) => player.id !== PlayerID.PLAYER_0;
   const lastRoundResult = ref<RoundResult | null>(null);
+  // 标记是否强制停止
+  const isDestroyed = ref(false);
 
   type OpponentInfo = {
     name: string;
@@ -229,8 +231,11 @@ export const useGameStore = defineStore('game', () => {
 
   async function playLogic() {
     phase.value = 'playing';
+    isDestroyed.value = false;
 
     while (phase.value == 'playing') {
+      if (isDestroyed.value)
+          break;
       const player = players.value[currentPlayerIndex.value]!;
       const opponent = players.value[(currentPlayerIndex.value + 1) % players.value.length]!;
       if (wall.value.length === 0) {
@@ -242,6 +247,8 @@ export const useGameStore = defineStore('game', () => {
         discardOnly.value = false;
       }
       await runTurn(player, opponent, shouldDraw);
+      if (isDestroyed.value)
+        break;
     }
   }
 
@@ -319,6 +326,14 @@ export const useGameStore = defineStore('game', () => {
     startPlaying();
   }
 
+  function forceResetGame() {
+    isDestroyed.value = true;
+    phase.value = 'initial';
+    wall.value = [];
+    players.value = [];
+    lastRoundResult.value = null;
+  };
+
   return {
     phase,
     wall,
@@ -327,6 +342,7 @@ export const useGameStore = defineStore('game', () => {
     players,
     startNewGame,
     lastRoundResult,
-    nextRound
+    nextRound,
+    forceResetGame
   }
 })
