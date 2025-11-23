@@ -133,22 +133,43 @@ export class Player {
     // 明杠有两种形式，一种是加杠，一种是直接杠
     const sameCount = this.hand.filter(t => t.type === tile.type && t.value === tile.value).length;
     if (sameCount === 3) {
-      // 直接杠
+      // 大明杠
       this.hand = this.hand.filter(t => t.type != tile.type || t.value != tile.value);
       this.melds.push({ tile, type: 'kan' });
     } else {
-      // 加杠
+      // 小明杠
       const ponIndex = this.melds.findIndex(m => m.type === 'pon' && m.tile.value === tile.value && m.tile.type === tile.type);
       if (ponIndex >= 0) {
         this.melds[ponIndex]!.type = 'kan';
+        const tileIndex = this.hand.findIndex(t => t.type === tile.type && t.value === tile.value);
+        if (tileIndex > -1) {
+          this.hand.splice(tileIndex, 1);
+        }
       }
-      this.hand = this.hand.filter(t => t.id !== tile.id)
     }
   }
 
   handleAnKan() {
-    this.hand = this.hand.filter(t => t.type != this.lastGetTile?.type || t.value != this.lastGetTile?.value);
-    this.melds.push({ tile: this.lastGetTile!, type: 'ankan' });
+    let targetTile = this.lastGetTile;
+    let count = this.hand.filter(t => t.type === targetTile?.type && t.value === targetTile?.value).length;
+
+    if (count !== 4) {
+      const map = new Map<string, number>();
+      for (const t of this.hand) {
+        const key = `${t.type}-${t.value}`;
+        map.set(key, (map.get(key) || 0) + 1);
+        if (map.get(key) === 4) {
+          targetTile = t;
+          break;
+        }
+      }
+    }
+
+    if (!targetTile)
+      return;
+
+    this.hand = this.hand.filter(t => t.type != targetTile.type || t.value != targetTile.value);
+    this.melds.push({ tile: targetTile, type: 'ankan' });
   }
 
   registerActionListener(listener: (action: PlayerAction) => void) {
