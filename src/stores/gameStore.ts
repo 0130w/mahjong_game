@@ -127,15 +127,16 @@ export const useGameStore = defineStore('game', () => {
   }
 
   async function doAction(action: PlayerAction | null, player: Player, opponent: Player) {
-    resetPlayersState();
     switch (action?.type) {
       case 'skip': {
         currentPlayerIndex.value = player.id;
+        resetPlayersState();
         return;
       }
       case 'discard': {
         const tile = action.tile;
         player.handleDiscard(tile);
+        resetPlayersState();
         player.hand = sortHand(player.hand);
 
         const discardTile = player.lastDiscardTile!;
@@ -146,6 +147,7 @@ export const useGameStore = defineStore('game', () => {
       case 'pon': {
         const tile = opponent.lastDiscardTile!;
         player.handlePon(tile);
+        resetPlayersState();
         opponent.lastDiscardTile = null;
         discardOnly.value = true;
         opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
@@ -164,6 +166,7 @@ export const useGameStore = defineStore('game', () => {
         } else {
           player.handleAnKan();
         }
+        resetPlayersState();
         return;
       }
       case 'ron': {
@@ -183,6 +186,7 @@ export const useGameStore = defineStore('game', () => {
       default: {
         console.warn('Unknown action: ', action);
         currentPlayerIndex.value = opponent.id;
+        resetPlayersState();
         return;
       }
     }
