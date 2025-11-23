@@ -5,6 +5,7 @@ import { createFullWall, shuffleWall, dealTiles, sortHand } from '../utils/tiles
 import { ref } from 'vue';
 import type { GamePhase, RoundResult } from '../utils/define';
 import { calcFan, fanToPoints } from '../utils/hupai';
+import router from '../router';
 
 export const useGameStore = defineStore('game', () => {
 
@@ -17,15 +18,48 @@ export const useGameStore = defineStore('game', () => {
   const isAIPlayer = (player: Player) => player.id !== PlayerID.PLAYER_0;
   const lastRoundResult = ref<RoundResult | null>(null);
 
+  type OpponentInfo = {
+    name: string;
+    avatar: string;
+  }
+
+  const opponents: OpponentInfo[] = [
+    {
+      name: '墨兰',
+      avatar: '/assets/avatar/molan.png',
+    },
+    {
+      name: '钟老',
+      avatar: '/assets/avatar/zhonglao.png',
+    },
+    {
+      name: '小铃铛',
+      avatar: '/assets/avatar/xiaolingdang.png',
+    }
+  ];
+
+  const currentOpponentIndex = ref(0);
+  const beatenOpponentCount = ref(0);
+  const isGameOver = ref(false);
+  const gameOverReason = ref<'lose' | 'winAll' | null>(null);
+
   function initRound() {
     wall.value = shuffleWall(createFullWall());
     currentPlayerIndex.value = 0;
 
     if (players.value.length === 0) {
-      const player_0 = new Player(PlayerID.PLAYER_0, '我', []);
-      const player_1 = new Player(PlayerID.PLAYER_1, '对手', []);
-      players.value = [player_0, player_1];
+      const me = new Player(PlayerID.PLAYER_0, '我', [], '/assets/avatar/me.png');
+      const oppInfo = opponents[currentOpponentIndex.value];
+      const opp = new Player(PlayerID.PLAYER_1, oppInfo!.name, [], oppInfo!.avatar);
+      players.value = [me, opp];
+    } else {
+      // 只更新对手的名字和头像（第一次之后切换对手时用）
+      const oppInfo = opponents[currentOpponentIndex.value];
+      const opp = players.value[PlayerID.PLAYER_1]!;
+      opp.name = oppInfo!.name;
+      opp.avatar = oppInfo!.avatar;
     }
+
 
     const player_0 = players.value[PlayerID.PLAYER_0]!;
     const player_1 = players.value[PlayerID.PLAYER_1]!;
@@ -58,7 +92,7 @@ export const useGameStore = defineStore('game', () => {
 
   function waitForPlayerAction(player: Player, timeoutMs: number): Promise<PlayerAction | null> {
     return new Promise((resolve, _) => {
-      let timerId : any;
+      let timerId: any;
       const off = player.registerActionListener((action) => {
         clearTimeout(timerId);
         off();
@@ -237,12 +271,46 @@ export const useGameStore = defineStore('game', () => {
       players.value[loserId!]!.score -= score;
     }
 
-    // TODO:花猪
+    const me = players.value[PlayerID.PLAYER_0]!;
+    const opp = players.value[PlayerID.PLAYER_1]!;
+
+    if (me.score < 0) {
+      isGameOver.value = true;
+      gameOverReason.value = 'lose';
+      phase.value = 'finished';
+      return;
+    }
+
+    if (opp.score < 0) {
+      beatenOpponentCount.value += 1;
+
+      if (beatenOpponentCount.value >= opponents.length) {
+        isGameOver.value = true;
+        gameOverReason.value = 'winAll';
+        phase.value = 'finished';
+        // 还有下一个对手：切换到下一位
+        currentOpponentIndex.value += 1;
+
+        // 给下一位对手初始化分数，例如 50 分
+        const nextOppInfo = opponents[currentOpponentIndex.value];
+        opp.name = nextOppInfo!.name;
+        opp.avatar = nextOppInfo!.avatar;
+        opp.score = 50;
+
+        // 这里本局结束，点击“下一局”就会进入下一位对手
+        phase.value = 'finished';
+        return;
+      }
+    }
 
     phase.value = 'finished';
   }
 
   function nextRound() {
+    if (isGameOver.value) {
+      router.push('/');
+      return;
+    }
     roundNumber.value += 1;
     lastRoundResult.value = null;
     phase.value = 'initial';

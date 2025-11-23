@@ -64,6 +64,7 @@ export class Player {
   id: number;
   name: string;
   hand: Tile[];
+  avatar: string;
   discards: Tile[];
   melds: Meld[];
   playerState: PlayerState;
@@ -72,10 +73,11 @@ export class Player {
   actionListener: ((action: PlayerAction) => void) | null;
   score: number;
 
-  constructor(id: number, name: string, hand: Tile[]) {
+  constructor(id: number, name: string, hand: Tile[], avatar: string) {
     this.id = id;
     this.name = name;
     this.hand = hand;
+    this.avatar = avatar;
     this.discards = [];
     this.melds = [];
     this.playerState = new PlayerState();

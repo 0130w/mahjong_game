@@ -172,10 +172,10 @@ const opponentDiscardsSide = computed(() => {
   return (gameStore.players[1]?.discards || []).slice(MAIN_DISCARD_COUNT);
 });
 const playerAvatar = computed(() => {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${humanPlayer.value.name || 'User'}`;
+  return humanPlayer.value.avatar;
 });
 const opponentAvatar = computed(() => {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${gameStore.players[PlayerID.PLAYER_1]?.name || 'CPU'}`;
+  return gameStore.players[PlayerID.PLAYER_1]!.avatar;
 });
 
 const handleTileClick = (tile: Tile) => {
