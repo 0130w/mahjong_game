@@ -15,7 +15,7 @@ const router = createRouter({
       path: '/game',
       name: 'game',
       component: GamePage,
-      beforeEnter: (to, from, next) => {
+      beforeEnter: (_, __, next) => {
         const store = useGameStore();
         if (store.players.length === 0) {
           next('/');
