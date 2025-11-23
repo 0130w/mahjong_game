@@ -49,7 +49,16 @@ function canDecompose(counts: number[]): boolean {
     counts[i]! += 3; // 回溯
   }
 
-  // 川麻核心修改：直接返回 false，不再尝试拆顺子
+  if (i <= 7 && counts[i + 1]! > 0 && counts[i + 2]! > 0) {
+    counts[i]!--;
+    counts[i + 1]!--;
+    counts[i + 2]!--;
+    if (canDecompose(counts)) return true;
+    counts[i]!++;
+    counts[i + 1]!++;
+    counts[i + 2]!++;
+  }
+
   return false;
 }
 
