@@ -13,11 +13,18 @@
             :isCurrentPlayer="gameStore.currentPlayerIndex === PlayerID.PLAYER_1" :showHand="false"
             :lastGetTile="gameStore.players[PlayerID.PLAYER_1]!.lastGetTile!" />
         </div>
+
         <div class="avatar-container opponent-avatar">
           <div class="avatar-frame">
             <img :src="opponentAvatar" alt="Opponent" />
           </div>
           <div class="avatar-name">{{ gameStore.players[PlayerID.PLAYER_1]!.name }}</div>
+
+          <div v-if="gameStore.aiThought" class="ai-bubble">
+            <div class="bubble-content">{{ gameStore.aiThought }}</div>
+            <div class="bubble-arrow"></div>
+          </div>
+
         </div>
       </div>
 
@@ -218,9 +225,9 @@ const handleKan = () => {
   const me = humanPlayer.value;
 
   if (opponent && opponent.lastDiscardTile) {
-    currentPlayer.value.emitAction({ 
-      type: 'kan', 
-      tile: opponent.lastDiscardTile 
+    currentPlayer.value.emitAction({
+      type: 'kan',
+      tile: opponent.lastDiscardTile
     });
     return;
   }
@@ -228,17 +235,17 @@ const handleKan = () => {
   let targetTile: Tile | null = null;
 
   if (selectedTile.value) {
-    const canKanThis = me.melds.some(m => 
+    const canKanThis = me.melds.some(m =>
       m.type === 'pon' && m.tile.type === selectedTile.value!.type && m.tile.value === selectedTile.value!.value
     );
-    
+
     if (canKanThis) {
       targetTile = selectedTile.value;
     }
   }
 
   if (!targetTile) {
-    targetTile = me.hand.find(h => 
+    targetTile = me.hand.find(h =>
       me.melds.some(m => m.type === 'pon' && m.tile.type === h.type && m.tile.value === h.value)
     ) || null;
   }
@@ -797,5 +804,50 @@ const handleNextRound = () => {
 .avatar-frame:hover {
   transform: scale(1.05);
   border-color: #fff;
+}
+
+/* AI 气泡样式 */
+.ai-bubble {
+  position: absolute;
+  /* 根据你的布局微调位置，通常放在头像右侧或左下侧 */
+  top: 80px; 
+  right: -20px; 
+  z-index: 1000;
+  max-width: 220px;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bubble-content {
+  background-color: #fff;
+  color: #333;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e0e0e0;
+  text-align: left;
+  /* 自动换行 */
+  white-space: normal; 
+  word-wrap: break-word;
+}
+
+/* 气泡的小三角箭头 */
+.bubble-arrow {
+  position: absolute;
+  top: -8px; /* 指向上方 */
+  right: 40px; /* 根据头像位置调整 */
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #fff;
+  /* 稍微加一点阴影效果如果需要的话，或者用 drop-shadow filter */
+}
+
+/* 简单的弹出动画 */
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.8) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 </style>

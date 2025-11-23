@@ -4,8 +4,10 @@ import { Player, PlayerID } from '../utils/define';
 import { createFullWall, shuffleWall, dealTiles, sortHand } from '../utils/tiles';
 import { ref } from 'vue';
 import type { GamePhase, RoundResult } from '../utils/define';
-import { calcFan, fanToPoints } from '../utils/hupai';
+import { calcFan, canHu, fanToPoints } from '../utils/hupai';
 import router from '../router';
+import { getAIDecision } from '../service.ts/llm';
+import { stringToTile } from '../utils/format';
 
 export const useGameStore = defineStore('game', () => {
 
@@ -21,6 +23,8 @@ export const useGameStore = defineStore('game', () => {
   const isDestroyed = ref(false);
   const isGangReplacementTurn = ref(false);
   const isGangDiscard = ref(false);
+
+  const aiThought = ref<string>("");
 
   type OpponentInfo = {
     name: string;
@@ -121,11 +125,51 @@ export const useGameStore = defineStore('game', () => {
 
   async function runTurn(player: Player, opponent: Player, shouldDraw: boolean) {
 
+    // --- 阶段一：处理吃/碰/杠/胡的反应 (Reaction) ---
     if (player.hasReaction()) {
       if (isAIPlayer(player)) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // AI 模拟思考延迟
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        const state = player.playerState;
+
+        // 1. 优先判胡 (能胡必胡)
+        if (state.canRon || state.canTsumo) {
+          // 判断是自摸还是荣和
+          const actionType = state.canTsumo ? 'tsumo' : 'ron';
+          await doAction({ type: actionType }, player, opponent);
+          return;
+        }
+
+        // 2. 碰/杠 决策 (这里使用简单概率，暂不调用 LLM，节省 Token)
+        // 设定 40% 概率碰/杠
+        const wantsToMeld = Math.random() > 0.6;
+
+        if (state.canKan && wantsToMeld) {
+          let tileToKan: Tile | undefined;
+
+          tileToKan = player.hand.find(h =>
+            player.melds.some(m => m.type === 'pon' && m.tile.type === h.type && m.tile.value === h.value)
+          );
+
+          if (tileToKan) {
+            await doAction({ type: 'kan', tile: tileToKan }, player, opponent);
+          } else {
+            console.warn("AI has canKan state but no matching tile found in hand.");
+            await doAction({ type: 'skip' }, player, opponent);
+          }
+          return;
+        }
+
+        if (state.canPon && wantsToMeld) {
+          await doAction({ type: 'pon' }, player, opponent);
+          return;
+        }
+
+        // 3. 都不选，则跳过
         await doAction({ type: 'skip' }, player, opponent);
       } else {
+        // --- 人类玩家逻辑 ---
         const action = await waitForPlayerAction(player, 20000);
         if (!action) {
           await doAction({ type: 'skip' }, player, opponent);
@@ -136,6 +180,7 @@ export const useGameStore = defineStore('game', () => {
       return;
     }
 
+    // --- 阶段二：摸牌 (Draw) ---
     if (shouldDraw) {
       if (wall.value.length === 0) {
         await doAction({ type: 'ryuukyoku' }, player, opponent);
@@ -147,13 +192,72 @@ export const useGameStore = defineStore('game', () => {
       player.checkStateWithoutTile();
     }
 
+    // --- 阶段三：出牌 (Discard) ---
     if (isAIPlayer(player)) {
-      const idx = Math.floor(Math.random() * player.hand.length);
-      const tile = player.hand[idx]!;
-      await doAction({ type: 'discard', tile: tile }, player, opponent);
-    } else {
-      const action = await waitForPlayerAction(player, 20000);
+      // 1. 再次检查自摸 (摸牌后可能胡牌)
+      // 注意：calcFan 需要 options，这里简化调用 canHu 做预判
+      if (canHu(player.hand, player.melds)) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 惊喜延迟
+        await doAction({ type: 'tsumo' }, player, opponent);
+        return;
+      }
 
+      const withProbability = <T>(probability: number, value: T, defaultValue: T): T => {
+        return Math.random() < probability ? value : defaultValue;
+      };
+
+      // 使用
+      aiThought.value = withProbability(0.4, "我想想...", "");
+
+      let tileToDiscard: Tile | undefined;
+
+      try {
+        // 3. 调用 LLM API
+        // 传入：手牌，副露，自己的弃牌流，对手的弃牌流
+        const aiRes = await getAIDecision(
+          player.hand,
+          player.melds,
+          player.discards,
+          opponent.discards
+        );
+
+        // 4. 更新吐槽气泡
+        aiThought.value = aiRes.reason;
+        console.log(`[AI ${player.name}]`, aiRes.reason);
+
+        tileToDiscard = stringToTile(aiRes.discard, player.hand);
+
+      } catch (e) {
+        console.warn("AI Offline/Timeout, using fallback.");
+      }
+
+      if (!tileToDiscard) {
+        const idx = Math.floor(Math.random() * player.hand.length);
+        tileToDiscard = player.hand[idx]!;
+
+        // 如果气泡还是"思考中"或者空的，给个默认台词
+        if (!aiThought.value || aiThought.value === "我想想...") {
+          aiThought.value = "(犹豫) ...还是打这张吧。";
+        }
+      }
+
+      // 7. 留给用户阅读气泡的时间
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      await doAction({ type: 'discard', tile: tileToDiscard }, player, opponent);
+
+      // 9. 3秒后清除气泡，避免一直挡着
+      setTimeout(() => {
+        if (aiThought.value.includes(tileToDiscard?.value + "")) {
+          aiThought.value = "";
+        } else {
+          aiThought.value = "";
+        }
+      }, 4000);
+
+    } else {
+      // --- 人类玩家出牌 ---
+      const action = await waitForPlayerAction(player, 20000);
       if (!action) {
         // 超时逻辑：随机打牌
         const idx = Math.floor(Math.random() * player.hand.length);
@@ -200,7 +304,7 @@ export const useGameStore = defineStore('game', () => {
         opponent.lastDiscardTile = null;
         discardOnly.value = true;
         opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
-        isGangDiscard.value = false; 
+        isGangDiscard.value = false;
         isGangReplacementTurn.value = false;
         return;
       }
@@ -210,31 +314,31 @@ export const useGameStore = defineStore('game', () => {
         if (action.type === 'kan') {
           // 优先使用 action 中指定的 tile (用于加杠)
           if (action.tile) {
-             tile = action.tile;
-             
-             // 如果是加杠（action.tile 存在），那么必然是自己摸牌后的操作，属于杠后回合
-             // 除非这个 action.tile 是对应别人的 discard（大明杠）
-             if (opponent.lastDiscardTile && 
-                 opponent.lastDiscardTile.type === tile.type && 
-                 opponent.lastDiscardTile.value === tile.value) {
-                 // 这是一个大明杠
-                 opponent.lastDiscardTile = null;
-                 opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
-                 // 大明杠通常不算杠上花的前置条件，但看规则设定
-             } else {
-                 // 加杠 (自己手里的牌)
-                 isGangReplacementTurn.value = true;
-             }
-          } 
+            tile = action.tile;
+
+            // 如果是加杠（action.tile 存在），那么必然是自己摸牌后的操作，属于杠后回合
+            // 除非这个 action.tile 是对应别人的 discard（大明杠）
+            if (opponent.lastDiscardTile &&
+              opponent.lastDiscardTile.type === tile.type &&
+              opponent.lastDiscardTile.value === tile.value) {
+              // 这是一个大明杠
+              opponent.lastDiscardTile = null;
+              opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
+              // 大明杠通常不算杠上花的前置条件，但看规则设定
+            } else {
+              // 加杠 (自己手里的牌)
+              isGangReplacementTurn.value = true;
+            }
+          }
           // 兼容旧逻辑：如果没有传 tile，自动判断
           else {
-             tile = opponent.lastDiscardTile ? opponent.lastDiscardTile! : player.lastGetTile!;
-             if (opponent.lastDiscardTile) {
-                opponent.lastDiscardTile = null;
-                opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
-             } else {
-                isGangReplacementTurn.value = true;
-             }
+            tile = opponent.lastDiscardTile ? opponent.lastDiscardTile! : player.lastGetTile!;
+            if (opponent.lastDiscardTile) {
+              opponent.lastDiscardTile = null;
+              opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
+            } else {
+              isGangReplacementTurn.value = true;
+            }
           }
 
           player.handleKan(tile);
@@ -287,7 +391,7 @@ export const useGameStore = defineStore('game', () => {
 
     while (phase.value == 'playing') {
       if (isDestroyed.value)
-          break;
+        break;
       const player = players.value[currentPlayerIndex.value]!;
       const opponent = players.value[(currentPlayerIndex.value + 1) % players.value.length]!;
       if (wall.value.length === 0) {
@@ -395,6 +499,7 @@ export const useGameStore = defineStore('game', () => {
     startNewGame,
     lastRoundResult,
     nextRound,
-    forceResetGame
+    forceResetGame,
+    aiThought
   }
 })
