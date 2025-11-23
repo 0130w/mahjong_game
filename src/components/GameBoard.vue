@@ -18,25 +18,32 @@
       <!-- 中间区域：舍牌池 -->
       <div class="center-area">
         <div class="table-surface">
-          <div class="discard-pool">
-            <div class="discard-section opponent-discards">
-              <div class="discard-tiles">
-                <OpponentDiscardTile v-for="(tile, index) in gameStore.players[1]!.discards"
-                  :key="`p1-discard-${index}`" :tile="tile" />
+          <div class="discard-pool-container">
+            <div class="discard-section-main opponent-main">
+              <div class="main-grid-tiles">
+                <OpponentDiscardTile v-for="(tile, index) in opponentDiscardsMain" :key="`op-main-${index}`"
+                  :tile="tile" />
               </div>
             </div>
-
-            <div class="table-center">
-              <GameInfoPanel :roundNumber="gameStore.roundNumber" :wallCount="gameStore.wall.length"
-                :playerName="humanPlayer.name" :playerScore="humanPlayer.score"
-                :opponentName="gameStore.players[PlayerID.PLAYER_1]!.name"
-                :opponentScore="gameStore.players[PlayerID.PLAYER_1]!.score" playerWind="東" opponentWind="南" />
+            <div class="table-middle-row">
+              <div class="side-pool player-side">
+                <PlayerDiscardTile v-for="(tile, index) in playerDiscardsSide" :key="`p0-side-${index}`" :tile="tile"
+                  class="side-tile player-rotated" />
+              </div>
+              <div class="center-panel-wrapper">
+                <GameInfoPanel :roundNumber="gameStore.roundNumber" :wallCount="gameStore.wall.length"
+                  :playerName="humanPlayer.name" :playerScore="humanPlayer.score"
+                  :opponentName="gameStore.players[PlayerID.PLAYER_1]!.name"
+                  :opponentScore="gameStore.players[PlayerID.PLAYER_1]!.score" playerWind="東" opponentWind="南" />
+              </div>
+              <div class="side-pool opponent-side">
+                <OpponentDiscardTile v-for="(tile, index) in opponentDiscardsSide" :key="`p1-side-${index}`"
+                  :tile="tile" class="side-tile opponent-rotated" />
+              </div>
             </div>
-
-            <div class="discard-section player-discards">
-              <div class="discard-tiles">
-                <PlayerDiscardTile v-for="(tile, index) in gameStore.players[0]!.discards" :key="`p0-discard-${index}`"
-                  :tile="tile" />
+            <div class="discard-section-main player-main">
+              <div class="main-grid-tiles">
+                <PlayerDiscardTile v-for="(tile, index) in playerDiscardsMain" :key="`p0-main-${index}`" :tile="tile" />
               </div>
             </div>
           </div>
@@ -138,6 +145,19 @@ const isHumanTurn = computed(() => {
 });
 const currentPlayer = computed(() => {
   return gameStore.players[gameStore.currentPlayerIndex]!;
+});
+const MAIN_DISCARD_COUNT = 20;
+const playerDiscardsMain = computed(() => {
+  return (gameStore.players[0]?.discards || []).slice(0, MAIN_DISCARD_COUNT);
+});
+const playerDiscardsSide = computed(() => {
+  return (gameStore.players[0]?.discards || []).slice(MAIN_DISCARD_COUNT);
+});
+const opponentDiscardsMain = computed(() => {
+  return (gameStore.players[1]?.discards || []).slice(0, MAIN_DISCARD_COUNT);
+});
+const opponentDiscardsSide = computed(() => {
+  return (gameStore.players[1]?.discards || []).slice(MAIN_DISCARD_COUNT);
 });
 
 const handleTileClick = (tile: Tile) => {
@@ -251,6 +271,10 @@ const handleNextRound = () => {
   width: 100%;
   height: 100vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 20px;
 }
 
 /* 牌布铺满整个游戏区域 */
@@ -312,100 +336,139 @@ const handleNextRound = () => {
 }
 
 .player-top {
-  position: absolute;
-  top: 20px;
-  left: 60%;
-  transform: translateX(-50%);
-  width: 90%;
-  max-width: 800px;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
 }
 
 .player-bottom {
-  position: absolute;
-  bottom: 20px;
-  left: 40%;
-  transform: translateX(-50%);
-  width: 90%;
-  max-width: 800px;
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 20;
 }
 
-/* 中间桌面区域 - 舍牌池 */
 .center-area {
-  position: absolute;
-  top: 45%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 80%;
-  max-width: 900px;
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   z-index: 5;
+  padding: 10px 0;
 }
 
 .table-surface {
-  width: 100%;
-  height: auto;
-  min-height: 300px;
-  background: transparent;
-  position: relative;
+  transform: scale(0.9);
+  width: auto;
 }
 
-.discard-pool {
+@media (min-height: 950px) {
+  .table-surface {
+    transform: scale(1);
+  }
+}
+
+.discard-pool-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: 0;
-  position: relative;
-  min-height: 300px;
-  gap: 0;
+  gap: 8px;
 }
 
-.discard-section {
+.discard-section-main {
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 0;
   width: 100%;
 }
 
-.opponent-discards {
-  order: 1;
-  transform: rotate(180deg);
-}
-
-.player-discards {
-  order: 3;
-}
-
-.discard-tiles {
+.main-grid-tiles {
   display: grid;
   grid-template-columns: repeat(5, auto);
   gap: 2px;
   justify-content: center;
-  align-content: flex-start;
-  width: auto;
-  max-width: 700px;
-  padding: 0px;
-  background: transparent;
-  min-height: 80px;
 }
 
-/* 对手舍牌区 - 反转z-index，让上面的行覆盖下面的行 */
-.opponent-discards .discard-tiles>* {
-  position: relative;
-}
-
-.table-center {
-  order: 2;
-  flex-shrink: 0;
+.opponent-main {
+  transform: rotate(180deg);
   z-index: 1;
+}
+
+.table-middle-row {
   display: flex;
-  justify-content: center;
+  flex-direction: row;
   align-items: center;
-  margin: 10px 0;
+  justify-content: center;
+  gap: 32px;
+  min-height: 100px;
+}
+
+.center-panel-wrapper {
+  flex-shrink: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+}
+
+.side-pool {
+  display: grid;
+  grid-template-rows: repeat(5, auto);
+  grid-auto-flow: column; 
+  gap: 0px 12px;
+  align-content: center; 
+  justify-content: center;
+  height: auto;
+  width: auto;
+  max-width: 300px; 
+}
+
+.player-side {
+  direction: rtl;
+  justify-content: end;
+}
+
+.opponent-side {
+  direction: ltr;
+  justify-content: start;
+}
+
+:deep(.player-rotated),
+.player-rotated {
+  transform: rotate(90deg);
+  transform-origin: center center;
+  margin: -6px 0; 
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+  display: block; 
+}
+
+:deep(.opponent-rotated),
+.opponent-rotated {
+  transform: rotate(90deg);
+  transform-origin: center center;
+  margin: -6px 0;
+  box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.2);
+  display: block;
+}
+
+@media screen and (max-height: 900px) {
+  :deep(.player-rotated),
+  .player-rotated,
+  :deep(.opponent-rotated),
+  .opponent-rotated {
+    margin: -5px 0;
+  }
 }
 
 @keyframes pulse-glow {
-
   0%,
   100% {
     transform: scale(1);
