@@ -208,19 +208,42 @@ export const useGameStore = defineStore('game', () => {
       case 'ankan': {
         let tile: Tile;
         if (action.type === 'kan') {
-          tile = opponent.lastDiscardTile ? opponent.lastDiscardTile! : player.lastGetTile!;
-          if (opponent.lastDiscardTile) {
-            opponent.lastDiscardTile = null;
-            opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
-            isGangReplacementTurn.value = true;
-          } else {
-            isGangReplacementTurn.value = true;
+          // 优先使用 action 中指定的 tile (用于加杠)
+          if (action.tile) {
+             tile = action.tile;
+             
+             // 如果是加杠（action.tile 存在），那么必然是自己摸牌后的操作，属于杠后回合
+             // 除非这个 action.tile 是对应别人的 discard（大明杠）
+             if (opponent.lastDiscardTile && 
+                 opponent.lastDiscardTile.type === tile.type && 
+                 opponent.lastDiscardTile.value === tile.value) {
+                 // 这是一个大明杠
+                 opponent.lastDiscardTile = null;
+                 opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
+                 // 大明杠通常不算杠上花的前置条件，但看规则设定
+             } else {
+                 // 加杠 (自己手里的牌)
+                 isGangReplacementTurn.value = true;
+             }
+          } 
+          // 兼容旧逻辑：如果没有传 tile，自动判断
+          else {
+             tile = opponent.lastDiscardTile ? opponent.lastDiscardTile! : player.lastGetTile!;
+             if (opponent.lastDiscardTile) {
+                opponent.lastDiscardTile = null;
+                opponent.discards = opponent.discards.filter(t => t.id !== tile.id);
+             } else {
+                isGangReplacementTurn.value = true;
+             }
           }
+
           player.handleKan(tile);
         } else {
-          player.handleAnKan();
+          // 暗杠
+          player.handleAnKan(); // 暗杠通常内部逻辑会找 4 张一样的，或者 action.tile 也可以传进去优化
           isGangReplacementTurn.value = true;
         }
+
         isGangDiscard.value = false;
         resetPlayersState();
         return;

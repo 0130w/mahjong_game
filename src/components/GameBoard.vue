@@ -214,7 +214,41 @@ const handlePon = () => {
 }
 
 const handleKan = () => {
-  currentPlayer.value.emitAction({ type: 'kan' });
+  const opponent = gameStore.players[PlayerID.PLAYER_1];
+  const me = humanPlayer.value;
+
+  if (opponent && opponent.lastDiscardTile) {
+    currentPlayer.value.emitAction({ 
+      type: 'kan', 
+      tile: opponent.lastDiscardTile 
+    });
+    return;
+  }
+
+  let targetTile: Tile | null = null;
+
+  if (selectedTile.value) {
+    const canKanThis = me.melds.some(m => 
+      m.type === 'pon' && m.tile.type === selectedTile.value!.type && m.tile.value === selectedTile.value!.value
+    );
+    
+    if (canKanThis) {
+      targetTile = selectedTile.value;
+    }
+  }
+
+  if (!targetTile) {
+    targetTile = me.hand.find(h => 
+      me.melds.some(m => m.type === 'pon' && m.tile.type === h.type && m.tile.value === h.value)
+    ) || null;
+  }
+
+  if (targetTile) {
+    currentPlayer.value.emitAction({ type: 'kan', tile: targetTile });
+    selectedTile.value = null; // 杠完清空选中状态
+  } else {
+    console.warn("未找到可以杠的牌，请先选中要杠的手牌");
+  }
 }
 
 const handleAnKan = () => {

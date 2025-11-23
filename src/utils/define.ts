@@ -19,7 +19,7 @@ export interface Meld {
 export type PlayerAction =
   | { type: 'discard', tile: Tile }
   | { type: 'pon' }
-  | { type: 'kan' }
+  | { type: 'kan', tile: Tile }
   | { type: 'ankan' }
   | { type: 'ron' }
   | { type: 'tsumo' }
@@ -129,21 +129,22 @@ export class Player {
   }
 
   handleKan(tile: Tile) {
-    // 明杠有两种形式，一种是加杠，一种是直接杠
-    const sameCount = this.hand.filter(t => t.type === tile.type && t.value === tile.value).length;
-    if (sameCount === 3) {
-      // 大明杠
-      this.hand = this.hand.filter(t => t.type != tile.type || t.value != tile.value);
-      this.melds.push({ tile, type: 'kan' });
+    const handTilesMatch = this.hand.filter(t => t.type === tile.type && t.value === tile.value);
+    const sameCount = handTilesMatch.length;
+
+    const ponIndex = this.melds.findIndex(m => m.type === 'pon' && m.tile.value === tile.value && m.tile.type === tile.type);
+
+    if (ponIndex >= 0) {
+      this.melds[ponIndex]!.type = 'kan';
+      
+      const indexToRemove = this.hand.findIndex(t => t.type === tile.type && t.value === tile.value);
+      if (indexToRemove !== -1) {
+          this.hand.splice(indexToRemove, 1);
+      }
     } else {
-      // 小明杠
-      const ponIndex = this.melds.findIndex(m => m.type === 'pon' && m.tile.value === tile.value && m.tile.type === tile.type);
-      if (ponIndex >= 0) {
-        this.melds[ponIndex]!.type = 'kan';
-        const tileIndex = this.hand.findIndex(t => t.type === tile.type && t.value === tile.value);
-        if (tileIndex > -1) {
-          this.hand.splice(tileIndex, 1);
-        }
+      if (sameCount >= 3) {
+        this.hand = this.hand.filter(t => t.type !== tile.type || t.value !== tile.value);
+        this.melds.push({ tile, type: 'kan' });
       }
     }
   }
