@@ -117,6 +117,11 @@
             <span>
               {{ gameStore.lastRoundResult.han }} 番
             </span>
+          <ul v-if="gameStore.lastRoundResult.hanTypes && gameStore.lastRoundResult.hanTypes.length">
+            <li v-for="hanType in gameStore.lastRoundResult.hanTypes" :key="hanType">
+              {{ hanType }}
+            </li>
+          </ul>
           </p>
 
           <p v-else-if="gameStore.lastRoundResult.endType === 'tsumo'">
@@ -124,6 +129,12 @@
             <span>
               {{ gameStore.lastRoundResult.han }} 番
             </span>
+          <ul v-if="gameStore.lastRoundResult.hanTypes && gameStore.lastRoundResult.hanTypes.length">
+            <li v-for="hanType in gameStore.lastRoundResult.hanTypes" :key="hanType">
+              {{ hanType }}
+            </li>
+          </ul>
+
           </p>
 
           <p v-else-if="gameStore.lastRoundResult.endType === 'ryuukyoku'">
@@ -652,14 +663,16 @@ const handleNextRound = () => {
 .opponent-layout {
   display: flex;
   flex-direction: row;
-  align-items: center; /* 这里的对齐方式决定了头像是和手牌顶部对齐还是居中 */
+  align-items: center;
+  /* 这里的对齐方式决定了头像是和手牌顶部对齐还是居中 */
   gap: 20px;
 }
 
 /* 调整自家控制区布局，防止头像挤压手牌 */
 .player-with-controls {
   /* 原有样式保持，flex-direction 默认是 row */
-  align-items: flex-end; /* 让头像底部和手牌底部对齐，或者用 center */
+  align-items: flex-end;
+  /* 让头像底部和手牌底部对齐，或者用 center */
 }
 
 .avatar-container {
@@ -668,13 +681,15 @@ const handleNextRound = () => {
   align-items: center;
   position: relative;
   z-index: 30;
-  width: 100px; /* 头像区域宽度 */
+  width: 100px;
+  /* 头像区域宽度 */
 }
 
 /* 自家头像微调 */
 .self-avatar {
   margin-right: 15px;
-  margin-bottom: 5px; /* 稍微抬高一点 */
+  margin-bottom: 5px;
+  /* 稍微抬高一点 */
 }
 
 /* 对家头像微调 */
@@ -686,7 +701,8 @@ const handleNextRound = () => {
 .avatar-frame {
   width: 80px;
   height: 80px;
-  border-radius: 12px; /* 圆角矩形，也可以用 50% 变成圆形 */
+  border-radius: 12px;
+  /* 圆角矩形，也可以用 50% 变成圆形 */
   background: rgba(20, 30, 40, 0.8);
   border: 2px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
@@ -707,8 +723,8 @@ const handleNextRound = () => {
   margin-top: 5px;
   font-size: 14px;
   color: #fff;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-  background: rgba(0,0,0,0.5);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -731,9 +747,17 @@ const handleNextRound = () => {
 
 /* 简单的呼吸灯动画，让头像框看起来是活的 */
 @keyframes avatar-pulse {
-  0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.1); }
-  50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
-  100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.1); }
+  0% {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  }
+
+  100% {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+  }
 }
 
 .avatar-frame:hover {

@@ -58,6 +58,7 @@ export interface RoundResult {
   winnerId?: number;
   loserId?: number;
   han?: number;
+  hanTypes?: string[];
 };
 
 export class Player {

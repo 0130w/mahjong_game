@@ -232,8 +232,8 @@ export const useGameStore = defineStore('game', () => {
           isLastTile: isLastTile,
           isQiangGang: (action as any).isQiangGang || false,
         };
-        const { fan } = calcFan(player.hand, player.melds, winningTile, options);
-        gameSettlement({ endType: 'ron', winnerId: player.id, loserId: opponent.id, han: fan });
+        const { fan, fanTypes } = calcFan(player.hand, player.melds, winningTile, options);
+        gameSettlement({ endType: 'ron', winnerId: player.id, loserId: opponent.id, han: fan, hanTypes: fanTypes });
         return;
       }
       case 'tsumo': {
@@ -241,8 +241,8 @@ export const useGameStore = defineStore('game', () => {
           isGangShangHua: isGangReplacementTurn.value, // 是否是杠后摸到的这张牌
           isLastTile: isLastTile                       // 海底捞月
         };
-        const { fan } = calcFan(player.hand, player.melds, undefined, options);
-        gameSettlement({ endType: 'tsumo', winnerId: player.id, han: fan });
+        const { fan, fanTypes } = calcFan(player.hand, player.melds, undefined, options);
+        gameSettlement({ endType: 'tsumo', winnerId: player.id, han: fan, hanTypes: fanTypes });
         return;
       }
       case 'ryuukyoku': {
