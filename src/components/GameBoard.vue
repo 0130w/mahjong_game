@@ -78,6 +78,11 @@
               </div>
               <div class="avatar-name">{{ humanPlayer.name }}</div>
             </div>
+            <div v-if="isHumanTurn" class="turn-timer">
+              <span :class="{ 'warning-glow': gameStore.turnTimer <= 5 }">
+                {{ gameStore.turnTimer }}s
+              </span>
+            </div>
             <PlayerHand :player="humanPlayer" :isCurrentPlayer="isHumanTurn" :showHand="true"
               :lastGetTile="humanPlayer.lastGetTile!" :selectedTile="selectedTile!" @tileClick="handleTileClick" />
             <div class="action-buttons">
@@ -810,8 +815,8 @@ const handleNextRound = () => {
 .ai-bubble {
   position: absolute;
   /* 根据你的布局微调位置，通常放在头像右侧或左下侧 */
-  top: 80px; 
-  right: -20px; 
+  top: 80px;
+  right: -20px;
   z-index: 1000;
   max-width: 220px;
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -828,15 +833,17 @@ const handleNextRound = () => {
   border: 1px solid #e0e0e0;
   text-align: left;
   /* 自动换行 */
-  white-space: normal; 
+  white-space: normal;
   word-wrap: break-word;
 }
 
 /* 气泡的小三角箭头 */
 .bubble-arrow {
   position: absolute;
-  top: -8px; /* 指向上方 */
-  right: 40px; /* 根据头像位置调整 */
+  top: -8px;
+  /* 指向上方 */
+  right: 40px;
+  /* 根据头像位置调整 */
   width: 0;
   height: 0;
   border-left: 8px solid transparent;
@@ -847,7 +854,69 @@ const handleNextRound = () => {
 
 /* 简单的弹出动画 */
 @keyframes popIn {
-  from { opacity: 0; transform: scale(0.8) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* GameBoard.vue (在 style scoped 底部添加) */
+
+/* 倒计时样式 */
+.turn-timer {
+  position: absolute;
+  top: -60px; /* 调整到手牌上方 */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(33, 33, 33, 0.85);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  border: 2px solid #555;
+  min-width: 60px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.turn-timer span {
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.warning-glow {
+  color: #ff4444; /* 红色警告 */
+  text-shadow: 0 0 8px rgba(255, 68, 68, 0.8);
+  animation: pulse-warning 1s infinite alternate;
+}
+
+@keyframes pulse-warning {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.player-with-controls {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  position: relative;
+}
+
+.player-bottom {
+  position: relative;
+  z-index: 20;
 }
 </style>

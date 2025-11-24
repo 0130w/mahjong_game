@@ -23,8 +23,10 @@ export const useGameStore = defineStore('game', () => {
   const isDestroyed = ref(false);
   const isGangReplacementTurn = ref(false);
   const isGangDiscard = ref(false);
-
   const aiThought = ref<string>("");
+  const turnTimeLimit = 20;
+  const turnTimer = ref(0);
+  let timerInterval: number | null = null;
 
   type OpponentInfo = {
     name: string;
@@ -50,6 +52,29 @@ export const useGameStore = defineStore('game', () => {
   const beatenOpponentCount = ref(0);
   const isGameOver = ref(false);
   const gameOverReason = ref<'lose' | 'winAll' | null>(null);
+
+  function startTurnTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+    turnTimer.value = turnTimeLimit;
+    timerInterval = setInterval(() => {
+      turnTimer.value -= 1;
+      if (turnTimer.value <= 0) {
+        clearInterval(timerInterval!);
+        timerInterval = null;
+        // 计时器归零，但实际超时逻辑由 waitForPlayerAction 的 setTimeout 负责触发
+      }
+    }, 1000) as unknown as number;
+  }
+
+  function stopTurnTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    turnTimer.value = 0;
+  }
 
   function initRound() {
     wall.value = shuffleWall(createFullWall());
@@ -104,14 +129,21 @@ export const useGameStore = defineStore('game', () => {
   function waitForPlayerAction(player: Player, timeoutMs: number): Promise<PlayerAction | null> {
     return new Promise((resolve, _) => {
       let timerId: any;
+
+      if (!isAIPlayer(player)) {
+        startTurnTimer();
+      }
+
       const off = player.registerActionListener((action) => {
         clearTimeout(timerId);
+        stopTurnTimer();
         off();
         resolve(action);
       });
 
       timerId = setTimeout(() => {
         off();
+        stopTurnTimer();
         resolve(null);
       }, timeoutMs);
     });
@@ -500,6 +532,7 @@ export const useGameStore = defineStore('game', () => {
     lastRoundResult,
     nextRound,
     forceResetGame,
-    aiThought
+    aiThought,
+    turnTimer,
   }
 })

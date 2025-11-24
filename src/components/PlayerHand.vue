@@ -3,14 +3,14 @@
     <!-- 手牌区域 -->
     <div class="hand-area">
       <div class="hand-tiles" v-if="showHand">
-        <div v-for="tile in player.hand" :key="tile.id" class="hand-tile-wrapper"
+        <div v-for="tile in displayHand" :key="tile.id" class="hand-tile-wrapper"
           :class="{ 'is-drawn-tile': props.lastGetTile?.id === tile.id }">
           <TileComponent :tile="tile" :isSelected="props.selectedTile?.id === tile.id" :clickable="isCurrentPlayer"
             @click="handleTileClick(tile)" />
         </div>
       </div>
       <div class="hand-tiles-hidden" v-else>
-        <div v-for="(tile, index) in player.hand" :key="`hidden-${index}`" class="tile-back"
+        <div v-for="(tile, index) in displayHand" :key="`hidden-${index}`" class="tile-back"
           :class="{ 'is-drawn-tile-back': props.lastGetTile?.id === tile.id }">
           <div class="tile-back-pattern"></div>
         </div>
@@ -20,6 +20,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Tile, Player } from '../utils/define';
 import TileComponent from './TileComponent.vue';
 
@@ -33,6 +34,19 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   showHand: true,
+});
+
+const displayHand = computed(() => {
+  if (!props.lastGetTile) {
+    return props.player.hand;
+  }
+  const lastTileId = props.lastGetTile.id;
+  const mainHand = props.player.hand.filter(tile => tile.id !== lastTileId);
+  const drawnTile = props.player.hand.find(tile => tile.id === lastTileId);
+  if (!drawnTile) {
+    return props.player.hand;
+  }
+  return [...mainHand, drawnTile];
 });
 
 const emit = defineEmits<{
